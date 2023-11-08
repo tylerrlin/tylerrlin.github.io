@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV == "development") {
     const nextConfig = {};
     module.exports = nextConfig;
 } else {
