@@ -13,12 +13,10 @@ Hi, I'm Tyler! This is my personal portfolio website, showcasing my projects, sk
 
 ## Features
 
--   Responsive design for various screen sizes.
--   Display a list of your projects with details.
--   Highlight your skills and technologies.
--   Share your experiences and achievements.
--   Contact information and social media links.
--   Easily customizable and extendable.
+-   Modular React Components built with TypeScript using TailwindCSS styling
+-   Simple PocketBase backend to store Contact Form submissions
+-   Framer Motion powered animations and gesture responses
+-   Responsive design tailored for both mobile/desktop
 
 ## Technologies Used
 
