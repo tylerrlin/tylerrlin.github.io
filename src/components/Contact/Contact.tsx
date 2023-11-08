@@ -67,6 +67,7 @@ const Contact = () => {
                         href="/resume.pdf"
                         rel="noopener noreferrer"
                         target="_blank"
+                        locale={false}
                     >
                         <motion.div
                             initial={{ opacity: 0.5 }}
