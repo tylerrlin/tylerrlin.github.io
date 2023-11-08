@@ -63,11 +63,10 @@ const Contact = () => {
                         linkedin.com/in/tylerrlin
                     </Link>
 
-                    <Link
+                    <a
                         href="/resume.pdf"
                         rel="noopener noreferrer"
                         target="_blank"
-                        locale={false}
                     >
                         <motion.div
                             initial={{ opacity: 0.5 }}
@@ -76,7 +75,7 @@ const Contact = () => {
                         >
                             RESUME.
                         </motion.div>
-                    </Link>
+                    </a>
                 </div>
             </div>
         </div>
