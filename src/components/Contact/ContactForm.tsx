@@ -53,7 +53,7 @@ const ContactForm = () => {
                 onChange={(e) =>
                     setTextValues({ ...textValues, message: e.target.value })
                 }
-                className="mt-20 bg-black border-none outline-none w-full font-poppins text-lg max-h-96 indent-5 h-32"
+                className="mt-20 bg-black border-none outline-none w-11/12 font-poppins text-lg max-h-96 h-32"
                 style={{
                     minHeight: "100px",
                 }}
@@ -120,6 +120,7 @@ const ContactForm = () => {
                     transition={{ duration: 0.2 }}
                     onClick={() => {
                         if (!validEmail || textValues.email === "") {
+                            setValidEmail(false);
                             return;
                         }
                         try {

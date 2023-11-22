@@ -1,4 +1,4 @@
-import { pb } from "@/pb/pocketbase";
+import { pb } from "@/utils/pocketbase";
 
 interface FormData {
     name: string;
