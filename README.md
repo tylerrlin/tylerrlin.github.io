@@ -1,57 +1,57 @@
-# tylerrlin.github.io
-
 ![Website Screenshot](./public/project1.png "Website")
 
-Hi, I'm Tyler! This is my personal portfolio website, showcasing my projects, skills, and experience. It is built using Next.js, React, TypeScript, and Tailwind CSS (with a small PocketBase backend). You can visit the live website at [https://tylerrlin.github.io](https://tylerrlin.github.io).
+# tylerrlin.github.io
 
-## Table of Contents
+## Introduction
 
--   [Features](#features)
--   [Technologies Used](#technologies-used)
--   [Project Structure](#project-structure)
--   [License](#license)
+This repository contains the source code for my personal portofolio. Using Typescript and NextJS 13, it is designed to showcase my projects, skills, and experience.
+
+You can visit the live website at [https://tylerrlin.github.io](https://tylerrlin.github.io).
 
 ## Features
 
--   Modular React Components built with TypeScript using TailwindCSS styling
--   Simple PocketBase backend to store Contact Form submissions
--   Framer Motion powered animations and gesture responses
+-   Modular [React](https://reactjs.org/) Components built with [TypeScript](https://www.typescriptlang.org/) using [Tailwind CSS](https://tailwindcss.com/) styling
+-   Simple [PocketBase](https://pocketbase.io/) backend to store Contact Form submissions
+-   [Framer Motion](https://www.framer.com/motion/) powered animations and gesture responses
 -   Responsive design tailored for both mobile/desktop
 
-## Technologies Used
+## Deploy Locally
 
--   [Next.js](https://nextjs.org/)
--   [React](https://reactjs.org/)
--   [TypeScript](https://www.typescriptlang.org/)
--   [Tailwind CSS](https://tailwindcss.com/)
+## Prerequisites
 
-## Project Structure
+Before running your personal portfolio website locally, ensure you have the following:
 
--   ./src/app : contains the layout.tsx and page.tsx for the website
--   ./public : contains static assests like images and pdfs
--   ./src/components : contains the integrated reusable React components
--   ./src/lib : contains Pocketbase initialization
+-   Node.js installed (version 14 or later)
+-   Next.js 13 installed globally (`npm install -g next@13`)
+-   Git installed
 
-## License
+### Steps to Run Locally
 
-MIT License
+#### 1. Clone the Repository
 
-Copyright (c) 2023 Tyler Lin
+```bash
+git clone https://github.com/tylerrlin/tylerrlin.github.io.git
+cd tylerrlin.github.io
+```
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+#### 2. Install Dependencies
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+```bash
+npm install
+```
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+#### 3. Start the Development Server
+
+```bash
+npm run dev
+```
+
+Congratulations! Visit http://localhost:8080 in your browser to view your personal portfolio. To change the port, edit the package.json file.
+
+---
+
+#### Making Changes
+
+Feel free to make changes to the portfolio code. The development server will automatically reload as you save changes.
+
+---
