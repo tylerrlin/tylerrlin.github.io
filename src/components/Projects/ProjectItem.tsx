@@ -82,7 +82,7 @@ const ProjectItem = (props: ProjectItemProps) => {
                     <div
                         className="absolute w-full h-full hover:opacity-0 duration-300"
                         style={{
-                            background: "rgba(190, 255, 190, 0.3)",
+                            background: "rgba(190, 255, 190, 0.4)",
                         }}
                     ></div>
                 </Link>
@@ -117,7 +117,7 @@ const ProjectItem = (props: ProjectItemProps) => {
                     <h3>{props.description}</h3>
                 </motion.div>
                 <motion.div
-                    className={`flex flex-row gap-5 text-green-light text-xs xl:text-sm font-poppins font-medium`}
+                    className={`flex flex-row gap-5 text-green-light text-xs font-poppins font-medium`}
                     variants={projectInfoAnimate}
                 >
                     {props.skills.map((skill, index) => (
