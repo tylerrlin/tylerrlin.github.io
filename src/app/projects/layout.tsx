@@ -1,5 +1,8 @@
+"use client";
+
+import { motion } from "framer-motion";
+
 import HomeButton from "@/components/HomeButton";
-import Home from "../page";
 
 export default function ProjectLayout({
     children,
@@ -7,9 +10,21 @@ export default function ProjectLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div>
+        <motion.div
+            className="flex justify-center mt-32"
+            initial={{
+                opacity: 0,
+            }}
+            animate={{
+                opacity: 1,
+            }}
+            transition={{
+                duration: 1,
+                ease: "easeInOut",
+            }}
+        >
             <HomeButton />
-            {children}
-        </div>
+            <div className="w-2/3 text-center">{children}</div>
+        </motion.div>
     );
 }

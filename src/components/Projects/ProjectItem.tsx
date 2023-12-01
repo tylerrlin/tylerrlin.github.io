@@ -67,7 +67,6 @@ const ProjectItem = (props: ProjectItemProps) => {
                 <Link
                     href={props.deployed}
                     rel="noopener noreferrer"
-                    target="_blank"
                     className="relative w-full h-full"
                 >
                     <Image
@@ -141,7 +140,6 @@ const ProjectItem = (props: ProjectItemProps) => {
                     <Link
                         href={props.deployed}
                         rel="noopener noreferrer"
-                        target="_blank"
                         className="pointer-events-auto opacity-50 hover:opacity-100 hover:-translate-y-1 duration-300"
                     >
                         <FontAwesomeIcon icon={faExternalLinkAlt} />

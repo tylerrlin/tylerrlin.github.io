@@ -1,4 +1,8 @@
+"use client";
+
 import React from "react";
+
+import { motion } from "framer-motion";
 
 import Header from "@/components/Header/Header";
 import Skills from "@/components/Skills/Skills";
@@ -10,14 +14,18 @@ import NavBar from "@/components/NavBar";
 
 const Home = () => {
     return (
-        <div>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, ease: "easeInOut" }}
+        >
             <Header />
             <Skills />
             <Projects />
             <About />
             <Contact />
             <NavBar />
-        </div>
+        </motion.div>
     );
 };
 

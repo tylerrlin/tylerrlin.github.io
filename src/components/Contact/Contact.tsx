@@ -40,9 +40,9 @@ const Contact = () => {
                     </motion.h1>
                 ))}
             </motion.div>
-            <div className="mt-32 w-3/5 h-full flex justify-center gap-20 flex-col lg:flex-row">
+            <div className="mt-32 w-3/5 h-full flex justify-center gap-48 xl:gap-20 flex-col xl:flex-row">
                 <ContactForm />
-                <div className="hidden flex-col gap-10 xl:flex xl:w-2/5">
+                <div className="flex-col gap-10 flex w-3/5 xl:w-2/5">
                     <h2 className="text-3xl font-poppins mb-10">
                         Let&apos;s keep in touch...
                     </h2>
@@ -50,7 +50,7 @@ const Contact = () => {
                         href="mailto:tylerrlin@gmail.com"
                         rel="noopener noreferrer"
                         target="_blank"
-                        className="text-xl opacity-50 duration-300 font-roboto hover:opacity-100 indent-5 hover:indent-10 text-green-light"
+                        className="text-xl opacity-50 duration-300 font-roboto hover:opacity-100 indent-5 text-green-light"
                     >
                         tylerrlin@gmail.com
                     </Link>
@@ -58,7 +58,7 @@ const Contact = () => {
                         href="https://www.linkedin.com/in/tylerrlin/"
                         rel="noopener noreferrer"
                         target="_blank"
-                        className="text-xl opacity-50 duration-300 font-roboto hover:opacity-100 indent-5 hover:indent-10 text-green-light"
+                        className="text-xl opacity-50 duration-300 font-roboto hover:opacity-100 indent-5 text-green-light"
                     >
                         linkedin.com/in/tylerrlin
                     </Link>
