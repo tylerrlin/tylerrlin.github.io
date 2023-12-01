@@ -21,8 +21,7 @@ You can visit the live website at [https://tylerrlin.github.io](https://tylerrli
 
 Before running your personal portfolio website locally, ensure you have the following:
 
--   Node.js installed (version 14 or later)
--   Next.js 13 installed globally (`npm install -g next@13`)
+-   Node.js installed
 -   Git installed
 
 ### Steps to Run Locally
