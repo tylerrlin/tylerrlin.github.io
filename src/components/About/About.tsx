@@ -48,7 +48,7 @@ const About = () => {
                         <span className="text-green-light">
                             software engineering internships
                         </span>{" "}
-                        for Summer 2024.
+                        for Summer 2025.
                     </p>
                 </div>
             </motion.div>
