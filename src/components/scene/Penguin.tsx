@@ -15,7 +15,7 @@ import {
   Vector2,
   Vector3,
 } from 'three'
-import { attention } from '../../attention'
+import { attention, currentPointer } from '../../attention'
 
 const MODEL_URL = '/penguin.glb'
 
@@ -33,12 +33,20 @@ const HEAD_POINT = new Vector3(0, 1.18, 0.12) // roughly between the eyes
 // Flippers: the model's flippers flare away from the body, which reads as a
 // loose plank on the near side in three-quarter view. Swing them in slightly
 // about the shoulder so they hang against the body.
+//
+// Measured from the mesh: body vertices never exceed |x| = 0.221, flipper
+// vertices start at |x| = 0.224 and span y = 0.25..0.9. A narrow |x| ramp right
+// at that seam moves each flipper as one rigid piece. (A wider ramp bends the
+// flipper's inner edge less than its outer edge, which opened a light sliver
+// along the inner edge near the tip.) The y ramp at the bottom keeps the few
+// foot vertices that sit just past the seam from being dragged along.
 const FLIPPER = {
   shoulder: new Vector3(0.235, 0.84, -0.02), // mirrored for the other side
-  mask: { from: 0.235, to: 0.29 }, // |x| where flipper weight ramps in
-  top: { from: 0.78, to: 0.88 }, // weight fades out toward the shoulder
+  mask: { from: 0.2215, to: 0.2235 }, // |x| where flipper weight ramps in
+  top: { from: 0.8, to: 0.9 }, // weight fades out toward the shoulder
+  bottom: { from: 0.2, to: 0.24 }, // and is zero on the feet
   tuck: 0.2, // radians
-  length: 0.88, // shorten slightly so the thin tip doesn't dangle below the body line
+  length: 0.93, // shorten slightly so the thin tip doesn't dangle below the body line
 }
 
 // Gaze limits, in radians. Positive pitch looks down.
@@ -83,6 +91,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       uShoulder: { value: FLIPPER.shoulder },
       uFlipMask: { value: [FLIPPER.mask.from, FLIPPER.mask.to] },
       uFlipTop: { value: [FLIPPER.top.from, FLIPPER.top.to] },
+      uFlipBottom: { value: [FLIPPER.bottom.from, FLIPPER.bottom.to] },
       uTuck: { value: FLIPPER.tuck },
       uFlipLen: { value: FLIPPER.length },
     }),
@@ -111,6 +120,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
             uniform vec3 uShoulder;
             uniform vec2 uFlipMask;
             uniform vec2 uFlipTop;
+            uniform vec2 uFlipBottom;
             uniform float uTuck;
             uniform float uFlipLen;
             mat3 rotZ(float a) {
@@ -123,7 +133,8 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
             `#include <beginnormal_vertex>
             float side = sign(position.x);
             float flipW = smoothstep(uFlipMask.x, uFlipMask.y, abs(position.x))
-              * (1.0 - smoothstep(uFlipTop.x, uFlipTop.y, position.y));
+              * (1.0 - smoothstep(uFlipTop.x, uFlipTop.y, position.y))
+              * smoothstep(uFlipBottom.x, uFlipBottom.y, position.y);
             mat3 flipRot = rotZ(-side * uTuck * flipW);
             vec3 shoulder = vec3(side * uShoulder.x, uShoulder.yz);
             float headW = smoothstep(uNeckBlend.x, uNeckBlend.y, position.y)
@@ -155,6 +166,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       target: { yaw: 0, pitch: 0.02, roll: 0 } as Gaze,
       nextChange: 1.5,
       seen: attention.version,
+      following: false,
       euler: new Euler(0, 0, 0, 'YXZ'),
       m4: new Matrix4(),
       ray: new Raycaster(),
@@ -167,14 +179,14 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     [],
   )
 
-  // Turn the latest DOM attention point into a head gaze in the penguin's frame.
-  function gazeTowardAttention(): Gaze | null {
+  // Turn a viewport point into a head gaze in the penguin's frame.
+  function gazeToward(x: number, y: number): Gaze | null {
     if (!outer.current) return null
     const rect = gl.domElement.getBoundingClientRect()
     if (!rect.width || !rect.height) return null
     state.ndc.set(
-      ((attention.x - rect.left) / rect.width) * 2 - 1,
-      -((attention.y - rect.top) / rect.height) * 2 + 1,
+      ((x - rect.left) / rect.width) * 2 - 1,
+      -((y - rect.top) / rect.height) * 2 + 1,
     )
     state.ray.setFromCamera(state.ndc, camera)
     if (!state.ray.ray.intersectPlane(state.plane, state.hit)) return null
@@ -196,23 +208,42 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     const dt = Math.min(delta, 0.1) // avoid a jump after a backgrounded tab
     const still = reducedMotionQuery?.matches ?? false
 
+    let speed = 1
     if (attention.version !== state.seen) {
+      // A menu item or panel was selected: look at it and hold a moment.
       state.seen = attention.version
-      const focus = gazeTowardAttention()
+      const focus = gazeToward(attention.x, attention.y)
       if (focus) {
         state.target = focus
         state.home = { yaw: focus.yaw * 0.5, pitch: focus.pitch * 0.5, roll: 0 }
         state.nextChange = t + (attention.kind === 'panel' ? 5.5 : 3.2)
+        state.following = false
       }
     } else if (!still && t > state.nextChange) {
-      state.target = pickGaze(state.target, state.home)
-      state.nextChange = t + MathUtils.randFloat(2.4, 5.5)
+      // Between focus glances, calmly follow a moving cursor; otherwise idle.
+      const p = currentPointer(performance.now())
+      const follow = p && gazeToward(p.x, p.y)
+      if (follow) {
+        // Follow at a little less than the full angle: attentive, not fixated.
+        state.target = { yaw: follow.yaw * 0.8, pitch: follow.pitch * 0.7, roll: follow.roll * 0.6 }
+        state.following = true
+        speed = 0.7
+      } else {
+        if (state.following) {
+          // The cursor went still: hold that look briefly before idling again.
+          state.following = false
+          state.nextChange = t + MathUtils.randFloat(1.2, 2.2)
+        } else {
+          state.target = pickGaze(state.target, state.home)
+          state.nextChange = t + MathUtils.randFloat(2.4, 5.5)
+        }
+      }
     }
 
     // Critically-damped easing: quick but soft head turns, then a still hold.
     // With reduced motion the head snaps to where it should look, no idling.
     const { gaze, target } = state
-    const k = still ? 1e3 : 1
+    const k = still ? 1e3 : speed
     gaze.yaw = MathUtils.damp(gaze.yaw, target.yaw, 3.2 * k, dt)
     gaze.pitch = MathUtils.damp(gaze.pitch, target.pitch, 2.6 * k, dt)
     gaze.roll = MathUtils.damp(gaze.roll, target.roll, 2.2 * k, dt)

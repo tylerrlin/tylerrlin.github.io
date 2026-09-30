@@ -11,6 +11,7 @@
   --color-frost: #dfe4ea;
   --color-orange: #ee962a;
   --color-ember: #a8570f; /* orange for text/focus on light, 4.9:1 on ice */
+  --color-ember-deep: #8a4608; /* small orange text over the sky gradient, ≥5:1 */
 
   --font-display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -22,7 +23,7 @@
 :root {
   color-scheme: light;
   /* Horizon height as a share of the first viewport; shared by sky, ridges, ground. */
-  --horizon: 74%;
+  --horizon: 77%;
   --sun-x: 63%;
 }
 

@@ -3,6 +3,7 @@
 
 export type Project = {
   name: string
+  year: string // e.g. '2025'
   summary: string
   tags: string[]
   href?: string // live site or case study
@@ -13,17 +14,22 @@ export type ContactLink = {
   label: string
   value: string
   href: string
+  copy?: boolean // show a copy-to-clipboard button for the value
 }
 
 export const profile = {
   name: 'Tyler Lin',
   role: 'Software engineer',
+  // TODO: replace with a real one-to-two sentence introduction.
+  intro:
+    'A line or two on the kind of software I like to build, and what I care about while building it.',
 }
 
 // TODO: replace with real projects (name, one-line summary, stack tags, links).
 export const projects: Project[] = [
   {
     name: 'Project name',
+    year: '20XX', // TODO
     summary: 'One sentence on what it does and who it is for — the problem, not the stack.',
     tags: ['TypeScript', 'React'],
     href: '#',
@@ -31,12 +37,14 @@ export const projects: Project[] = [
   },
   {
     name: 'Project name',
+    year: '20XX', // TODO
     summary: 'One sentence on the most interesting technical decision behind it.',
     tags: ['Go', 'PostgreSQL'],
     source: '#',
   },
   {
     name: 'Project name',
+    year: '20XX', // TODO
     summary: 'One sentence on the outcome — what shipped and what changed because of it.',
     tags: ['Python', 'Data'],
     href: '#',
@@ -58,7 +66,7 @@ export const contactNote =
 
 // TODO: confirm handles and add a real email address.
 export const contact: ContactLink[] = [
-  { label: 'Email', value: 'hello@example.com', href: 'mailto:hello@example.com' },
+  { label: 'Email', value: 'hello@example.com', href: 'mailto:hello@example.com', copy: true },
   { label: 'GitHub', value: 'github.com/tylerrlin', href: 'https://github.com/tylerrlin' },
   { label: 'LinkedIn', value: 'linkedin.com/in/your-handle', href: '#' },
 ]

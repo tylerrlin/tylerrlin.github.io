@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from 'react'
+import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react'
 import { about, contact, contactNote, focus, projects } from '../content'
 import { SECTIONS, type SectionId } from '../sections'
 
@@ -28,7 +28,14 @@ function ProjectsBody() {
             {String(i + 1).padStart(2, '0')}
           </span>
           <div>
-            <h3 className="font-display text-[1.875rem] leading-tight">{p.name}</h3>
+            {/* Name left, year right-aligned on the same line: the list reads as an index. */}
+            <div className="flex items-baseline justify-between gap-4">
+              <h3 className="font-display text-[1.875rem] leading-tight">{p.name}</h3>
+              <span className="shrink-0 font-mono text-xs tabular-nums text-slate">
+                <span className="sr-only">Year: </span>
+                {p.year}
+              </span>
+            </div>
             <p className="mt-1.5 max-w-[46ch] text-[15px] leading-relaxed text-slate">{p.summary}</p>
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
               <ul className="flex flex-wrap gap-1.5" aria-label="Built with">
@@ -92,28 +99,82 @@ function AboutBody() {
   )
 }
 
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // Clipboard unavailable (e.g. insecure context): nothing to announce.
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={copied ? `${label} copied` : `Copy ${label.toLowerCase()}`}
+        className={[
+          'inline-flex size-9 shrink-0 sm:h-7 sm:w-[5.25rem] cursor-pointer items-center justify-center gap-1.5 rounded-full border font-mono text-[10px] tracking-[0.16em] uppercase transition-colors duration-200',
+          copied
+            ? 'border-navy bg-navy text-snow'
+            : 'border-navy/15 text-navy-soft hover:border-navy/35 hover:text-navy',
+        ].join(' ')}
+      >
+        {copied ? (
+          <svg aria-hidden viewBox="0 0 16 16" className="size-3">
+            <path d="m3 8.5 3 3 7-7" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          </svg>
+        ) : (
+          <svg aria-hidden viewBox="0 0 16 16" className="size-3">
+            <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+          </svg>
+        )}
+        <span aria-hidden className="hidden sm:inline">
+          {copied ? 'Copied' : 'Copy'}
+        </span>
+      </button>
+      <span role="status" className="sr-only">
+        {copied ? 'Copied to clipboard' : ''}
+      </span>
+    </>
+  )
+}
+
 function ContactBody() {
   return (
     <div className="space-y-8">
       <p className="max-w-[44ch] text-[17px] leading-[1.7] text-navy-soft">{contactNote}</p>
       <ul className="border-t border-navy/12">
         {contact.map((c) => (
-          <li key={c.label} className="border-b border-navy/12">
+          <li key={c.label} className="flex items-center gap-3 border-b border-navy/12">
             <a
               href={c.href}
               {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}
-              className="group grid grid-cols-[4.25rem_1fr_auto] items-baseline gap-3 py-5 sm:grid-cols-[5.5rem_1fr_auto] sm:gap-4 transition-colors hover:text-ember"
+              className="group grid min-w-0 flex-1 grid-cols-[4.25rem_1fr] items-baseline gap-3 py-5 transition-colors hover:text-ember sm:grid-cols-[5.5rem_1fr] sm:gap-4"
             >
               <span className="font-mono text-[11px] tracking-[0.18em] text-slate uppercase">
                 {c.label}
               </span>
-              <span className="min-w-0 truncate font-display text-[1.3rem] leading-tight sm:text-2xl md:text-[1.75rem]">
-                {c.value}
-              </span>
-              <span className="text-slate transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-ember">
-                <Arrow />
+              {/* The arrow follows the value, so rows stay aligned with or without a copy button. */}
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span className="min-w-0 truncate font-display text-[1.3rem] leading-tight sm:text-2xl md:text-[1.75rem]">
+                  {c.value}
+                </span>
+                <span className="shrink-0 text-slate transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-ember">
+                  <Arrow />
+                </span>
               </span>
             </a>
+            {c.copy && <CopyButton text={c.value} label={c.label === 'Email' ? 'Email address' : c.label} />}
           </li>
         ))}
       </ul>

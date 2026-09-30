@@ -98,7 +98,7 @@ export default function Snow() {
     <canvas
       ref={ref}
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-svh w-full md:fixed md:h-lvh"
+      className="pointer-events-none absolute inset-x-0 top-0 h-svh w-full md:fixed md:h-lvh md:[mask-image:linear-gradient(90deg,rgba(0,0,0,0.12)_0%,rgba(0,0,0,0.12)_36%,#000_52%)]"
     />
   )
 }

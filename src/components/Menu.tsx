@@ -1,35 +1,44 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { useLayoutEffect, useState, type MouseEvent, type RefObject } from 'react'
 import { SECTIONS } from '../sections'
 
 type Props = {
   selected: number
   onSelect: (index: number) => void
   onOpen: (index: number) => void
-  itemRefs: RefObject<(HTMLButtonElement | null)[]>
+  itemRefs: RefObject<(HTMLAnchorElement | null)[]>
 }
 
 // A title-screen menu: one item is always "selected" (hover, focus, or arrow
 // keys move it), marked by a small orange diamond that glides between rows.
+// Each item is a real link to its section's hash, so it can be bookmarked or
+// opened in a new tab; a plain click opens the panel in place.
 export default function Menu({ selected, onSelect, onOpen, itemRefs }: Props) {
-  const list = useRef<HTMLUListElement>(null)
   const [marker, setMarker] = useState<number | null>(null)
 
   useLayoutEffect(() => {
     const el = itemRefs.current[selected]
-    if (!el || !list.current) return
+    if (!el) return
     const num = el.querySelector<HTMLElement>('[data-index]')
+    // offsetTop is relative to the <ul> (the nearest positioned ancestor).
     const update = () => setMarker(num ? num.offsetTop + num.offsetHeight / 2 : el.offsetTop)
     update()
     // Fonts swapping in can shift rows; keep the marker aligned.
     document.fonts?.ready.then(update)
   }, [selected, itemRefs])
 
+  const onClick = (e: MouseEvent<HTMLAnchorElement>, i: number) => {
+    // Let the browser handle new-tab / new-window clicks.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    onOpen(i)
+  }
+
   return (
     <nav aria-label="Main">
-      <ul ref={list} className="relative -ml-1 flex flex-col">
-        <span
+      <ul className="relative flex flex-col">
+        <li
           aria-hidden
-          className="absolute top-0 -left-4 size-[7px] bg-orange transition-transform duration-500 ease-out-soft md:-left-6 [@media(hover:none)]:hidden"
+          className="absolute top-0 -left-6 hidden size-[7px] bg-orange transition-transform duration-500 ease-out-soft md:block"
           style={{
             transform: `translateY(${(marker ?? 0) - 3.5}px) rotate(45deg)`,
             opacity: marker === null ? 0 : 1,
@@ -39,41 +48,41 @@ export default function Menu({ selected, onSelect, onOpen, itemRefs }: Props) {
           const active = i === selected
           return (
             <li key={s.id}>
-              <button
+              <a
                 ref={(el) => {
                   itemRefs.current[i] = el
                 }}
-                type="button"
-                tabIndex={active ? 0 : -1}
-                onClick={() => onOpen(i)}
+                href={`#${s.id}`}
+                aria-current={active ? 'true' : undefined}
+                onClick={(e) => onClick(e, i)}
                 onMouseEnter={() => onSelect(i)}
                 onFocus={() => onSelect(i)}
                 className={[
-                  'group flex cursor-pointer items-baseline gap-5 py-2 pr-2 pl-1 text-left transition-colors duration-300 focus-visible:outline-none md:py-2.5',
-                  active ? 'text-navy' : 'text-navy/55 hover:text-navy/75 [@media(hover:none)]:text-navy',
+                  'group grid grid-cols-[2.25rem_auto] items-baseline gap-x-0 py-2.5 pr-2 transition-colors duration-300 focus-visible:outline-none md:flex md:gap-5 md:py-2.5',
+                  active ? 'text-navy' : 'text-navy md:text-navy/50 md:hover:text-navy/75',
                 ].join(' ')}
               >
                 <span data-index className="w-6 font-mono text-xs tracking-wider tabular-nums text-slate">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span
-                  className={[
-                    'font-display text-[2.5rem] leading-none decoration-orange decoration-2 underline-offset-[10px] transition-transform duration-500 ease-out-soft group-focus-visible:underline md:text-5xl',
-                    active ? 'translate-x-2 [@media(hover:none)]:translate-x-0' : '',
-                  ].join(' ')}
-                >
+                <span className="font-display text-[2.5rem] leading-none decoration-orange decoration-2 underline-offset-[10px] group-focus-visible:underline md:text-5xl">
                   {s.label}
                 </span>
+                {/* Phones: always shown under the label, so each item explains itself. */}
+                <span className="col-start-2 mt-1.5 font-mono text-[11px] tracking-[0.18em] text-slate uppercase md:hidden">
+                  {s.hint}
+                </span>
+                {/* Desktop: revealed beside the selected item. */}
                 <span
                   aria-hidden
                   className={[
-                    'hidden font-mono text-[11px] tracking-[0.18em] uppercase text-ember transition-opacity duration-300 md:inline',
+                    'hidden font-mono text-[11px] tracking-[0.18em] text-ember-deep uppercase transition-opacity duration-300 md:inline',
                     active ? 'opacity-100' : 'opacity-0',
                   ].join(' ')}
                 >
                   {s.hint}
                 </span>
-              </button>
+              </a>
             </li>
           )
         })}

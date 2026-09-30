@@ -20,7 +20,7 @@ export default function App() {
     const i = sectionFromHash(location.hash)
     return i >= 0 ? i : null
   })
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
   const heading = useRef<HTMLHeadingElement>(null)
   const pushed = useRef(false) // did we add the current history entry?
   const returnFocus = useRef(false)
@@ -94,6 +94,11 @@ export default function App() {
         }
         return
       }
+      // Only steer the menu when focus is on the page itself or already in the
+      // menu; anywhere else, arrows keep their usual job (scrolling, etc.).
+      const active = document.activeElement
+      const inMenu = !active || active === document.body || !!active.closest('nav[aria-label="Main"]')
+      if (!inMenu) return
       const n = SECTIONS.length
       let next: number | null = null
       if (e.key === 'ArrowDown') next = (selected + 1) % n
@@ -101,8 +106,7 @@ export default function App() {
       else if (e.key === 'Home') next = 0
       else if (e.key === 'End') next = n - 1
       else if (e.key === 'Enter') {
-        // Buttons handle their own Enter/Space; this covers focus on the page itself.
-        const active = document.activeElement
+        // Links handle their own Enter; this covers focus on the page itself.
         if (!active || active === document.body) {
           e.preventDefault()
           openPanel(selected)
@@ -133,7 +137,7 @@ export default function App() {
           </Suspense>
         </div>
 
-        <main className="relative flex flex-col px-6 pt-4 pb-14 sm:px-10 md:min-h-dvh md:justify-center md:pt-24 md:pb-40 md:pr-6 md:pl-[max(4rem,9vw)]">
+        <main className="relative flex flex-col px-6 pt-4 pb-14 sm:px-10 md:min-h-dvh md:justify-center md:pt-16 md:pb-28 md:pr-6 md:pl-[max(4rem,9vw)]">
           {onTitle ? (
             <div className="rise-in">
               <p className="flex items-center gap-3 font-mono text-[11px] tracking-[0.24em] text-slate uppercase">
@@ -143,7 +147,10 @@ export default function App() {
               <h1 className="mt-4 font-display text-[4.75rem] leading-[0.9] tracking-[-0.015em] md:text-[clamp(5.5rem,8.4vw,8.75rem)]">
                 {profile.name}
               </h1>
-              <div className="mt-10 md:mt-14">
+              <p className="mt-6 max-w-[40ch] text-[17px] leading-[1.65] text-pretty text-navy-soft md:mt-7">
+                {profile.intro}
+              </p>
+              <div className="mt-9 md:mt-12">
                 <Menu selected={selected} onSelect={select} onOpen={openPanel} itemRefs={itemRefs} />
               </div>
             </div>
@@ -158,7 +165,9 @@ export default function App() {
       <footer
         className={[
           'relative flex items-center justify-between gap-6 px-6 pb-8 font-mono text-[11px] tracking-[0.14em] text-slate uppercase sm:px-10 md:inset-x-0 md:bottom-0 md:px-[max(4rem,9vw)] md:pb-8',
-          onTitle ? 'md:fixed' : 'md:absolute',
+          // Pinned to the bottom of the title screen, unless the viewport is too
+          // short to fit it under the menu (landscape phones): then it flows.
+          onTitle ? '[@media(min-width:768px)_and_(min-height:620px)]:fixed' : 'md:absolute',
         ].join(' ')}
       >
         <span>© {new Date().getFullYear()} {profile.name}</span>
