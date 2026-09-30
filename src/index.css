@@ -1,20 +1,108 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #1c1c1e;
-  --color-paper: #f4f1ea;
-  --color-accent: #2f6fed;
+  /* Palette drawn from the penguin: navy back, ice belly, orange ear patch. */
+  --color-navy: #1f2536;
+  --color-navy-soft: #3a4257;
+  --color-slate: #525b70; /* muted text, 5.6:1 on ice */
+  --color-ice: #ece9e2;
+  --color-snow: #f6f4ef;
+  --color-mist: #c9d3e0;
+  --color-frost: #dfe4ea;
+  --color-orange: #ee962a;
+  --color-ember: #a8570f; /* orange for text/focus on light, 4.9:1 on ice */
+
+  --font-display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-html,
-body,
-#root {
-  height: 100%;
+:root {
+  color-scheme: light;
+  /* Horizon height as a share of the first viewport; shared by sky, ridges, ground. */
+  --horizon: 74%;
+  --sun-x: 63%;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --horizon: 36%;
+    --sun-x: 76%;
+  }
+}
+
+html {
+  background-color: var(--color-ice);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: var(--color-paper);
-  color: var(--color-ink);
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--color-ice);
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-orange) 35%, transparent);
+  color: var(--color-navy);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  /* Headings receive focus programmatically when a panel opens; no ring needed. */
+  [tabindex="-1"]:focus {
+    outline: none;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.9s var(--ease-out-soft) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fade-in 1.4s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

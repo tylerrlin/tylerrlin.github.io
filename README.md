@@ -8,6 +8,11 @@ Personal portfolio — minimalist game-menu home screen with a low-poly 3D pengu
 - [Tailwind CSS v4](https://tailwindcss.com) (via `@tailwindcss/vite`)
 - [React Three Fiber](https://r3f.docs.pmnd.rs) + [drei](https://drei.docs.pmnd.rs)
 
+## Content
+
+All copy lives in `src/content.ts` (projects, about, focus areas, contact links).
+Entries marked `TODO` are placeholders to replace with real details.
+
 ## Development
 
 ```sh
