@@ -129,7 +129,7 @@ export function ResumeText() {
                   <p className="mt-2 font-mono text-[11px] tracking-[0.16em] text-ember uppercase">
                     {entry.dates && <time>{entry.dates}</time>}
                     {entry.dates && entry.location && <span aria-hidden> · </span>}
-                    {entry.location}
+                    {entry.location && <span className="text-navy-soft">{entry.location}</span>}
                   </p>
                 )}
               </header>

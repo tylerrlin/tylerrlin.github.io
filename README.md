@@ -1,7 +1,14 @@
 # tylerrlin.github.io
 
-Personal portfolio — a poster-style home screen with a low-poly 3D penguin, and
-a resume it walks you through.
+<p align="center">
+  <img src="docs/home.webp" alt="Home page: the name Tyler Lin set on a snowy horizon beside a low-poly emperor penguin" width="72%" />
+  <img src="docs/mobile.webp" alt="Home page on a phone" width="23%" />
+</p>
+<p align="center">
+  <img src="docs/resume.webp" alt="Resume walk: a bird's-eye view of the penguin walking a path through the resume" width="96%" />
+</p>
+
+Visit the live website at [https://tylerrlin.github.io](https://tylerrlin.github.io).
 
 ## Stack
 
