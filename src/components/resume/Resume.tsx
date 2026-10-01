@@ -28,6 +28,7 @@ import {
   step,
   subscribeMode,
   subscribeView,
+  usedKeyboard,
   walk,
   type View,
 } from '../../walk/state'
@@ -269,13 +270,18 @@ export function ResumeHud() {
   const [hinted, setHinted] = useState(false)
   const wasActive = useRef(false)
 
-  // Focus: to Home on the way in, back to the Resume link on the way out.
+  // Focus: from the keyboard, to Home on the way in and back to the Resume
+  // link on the way out. After a tap or click, focus goes to the controls'
+  // container instead (no ring), so nothing looks pressed but assistive tech
+  // still lands in the resume.
   useEffect(() => {
     if (active) {
-      homeButton.current?.focus({ preventScroll: true })
+      if (usedKeyboard()) homeButton.current?.focus({ preventScroll: true })
+      else dom.hud?.focus({ preventScroll: true })
       setHinted(false)
     } else if (wasActive.current) {
-      document.querySelector<HTMLElement>('[data-resume-link]')?.focus({ preventScroll: true })
+      if (usedKeyboard()) document.querySelector<HTMLElement>('[data-resume-link]')?.focus({ preventScroll: true })
+      else (document.activeElement as HTMLElement | null)?.blur()
     }
     wasActive.current = active
   }, [active])
@@ -443,9 +449,10 @@ export function ResumeHud() {
   return (
     <div
       ref={(el) => void (dom.hud = el)}
+      tabIndex={-1}
       inert={!active}
       data-active={active || undefined}
-      className="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
+      className="pointer-events-none fixed inset-0 z-10 opacity-0 outline-none transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
     >
       {/* Top: a soft snow fade so text slides under the controls. */}
       <div aria-hidden className="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-ice from-55% wide-walk:h-32 wide-walk:from-40% via-ice/85 to-transparent" />

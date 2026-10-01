@@ -233,10 +233,19 @@ export function exitResume() {
   else applyExit()
 }
 
+/** Whether the last interaction was the keyboard, so focus is only moved
+ * visibly (with its ring) for keyboard users, not after a tap or click. */
+let keyboardLast = false
+export function usedKeyboard() {
+  return keyboardLast
+}
+
 let installed = false
 export function installHistory() {
   if (installed) return
   installed = true
+  window.addEventListener('keydown', () => void (keyboardLast = true), { capture: true })
+  window.addEventListener('pointerdown', () => void (keyboardLast = false), { capture: true })
   window.addEventListener('popstate', () => {
     if (history.state?.resume) applyEnter()
     else applyExit()
