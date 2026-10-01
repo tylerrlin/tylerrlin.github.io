@@ -137,20 +137,21 @@ export default function App() {
           </Suspense>
         </div>
 
-        <main className="relative flex flex-col px-6 pt-1 pb-12 sm:px-10 md:min-h-dvh md:justify-center md:pt-12 md:pb-36 md:pr-6 md:pl-[max(4rem,9vw)]">
+        <main className="relative flex flex-col px-9 pt-1 pb-14 sm:px-12 md:min-h-dvh md:justify-center md:pt-12 md:pb-36 md:pr-6 md:pl-[max(4rem,9vw)]">
           {onTitle ? (
-            <div className="rise-in">
-              <p className="flex items-center gap-3 font-mono text-[11px] tracking-[0.24em] text-slate uppercase">
+            <div className="rise-in text-center md:text-left">
+              <p className="flex items-center justify-center gap-3 font-mono text-[11px] tracking-[0.24em] text-slate uppercase md:justify-start">
                 <span aria-hidden className="h-px w-6 bg-navy/30" />
                 {profile.role}
+                <span aria-hidden className="h-px w-6 bg-navy/30 md:hidden" />
               </p>
               <h1 className="mt-3 font-display text-[3.75rem] leading-[0.92] md:mt-4 md:leading-[0.9] tracking-[-0.015em] md:text-[clamp(5.5rem,8.4vw,8.75rem)]">
                 {profile.name}
               </h1>
-              <p className="mt-4 max-w-[40ch] text-[16px] leading-[1.6] text-pretty text-navy-soft md:mt-7 md:text-[17px] md:leading-[1.65]">
+              <p className="mx-auto mt-4 max-w-[34ch] text-[16px] leading-[1.6] text-pretty text-navy-soft md:mx-0 md:mt-7 md:max-w-[40ch] md:text-[17px] md:leading-[1.65]">
                 {profile.intro}
               </p>
-              <div className="mt-8 md:mt-12">
+              <div className="mt-9 md:mt-12">
                 <Menu selected={selected} onSelect={select} onOpen={openPanel} itemRefs={itemRefs} />
               </div>
             </div>

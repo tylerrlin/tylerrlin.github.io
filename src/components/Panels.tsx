@@ -213,7 +213,7 @@ const Panel = forwardRef<HTMLHeadingElement, Props>(function Panel({ index, onCl
         </kbd>
       </button>
 
-      <header className="mt-8 mb-8 md:mt-10 md:mb-10">
+      <header className="mt-8 mb-8 text-center md:mt-10 md:mb-10 md:text-left">
         <Kicker>
           {String(index + 1).padStart(2, '0')} &nbsp;/&nbsp; {section.hint}
         </Kicker>
