@@ -6,9 +6,6 @@ import Director from './Director'
 import { installPointerTracking } from '../../attention'
 import { getMode, subscribeMode, walker } from '../../walk/state'
 
-/** The `wide` variant in index.css. One query, so CSS and the camera agree. */
-export const WIDE_QUERY = '(width >= 48rem) and (min-aspect-ratio: 4/5)'
-
 export default function Scene() {
   const host = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(true)

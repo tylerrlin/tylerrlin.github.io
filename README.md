@@ -1,12 +1,13 @@
 # tylerrlin.github.io
 
-Personal portfolio — minimalist game-menu home screen with a low-poly 3D penguin.
+Personal portfolio — a poster-style home screen with a low-poly 3D penguin, and
+a resume it walks you through.
 
 ## Stack
 
 - [Vite](https://vite.dev) + React + TypeScript
 - [Tailwind CSS v4](https://tailwindcss.com) (via `@tailwindcss/vite`)
-- [React Three Fiber](https://r3f.docs.pmnd.rs) + [drei](https://drei.docs.pmnd.rs)
+- [React Three Fiber](https://r3f.docs.pmnd.rs) + [three.js](https://threejs.org)
 
 ## Content
 

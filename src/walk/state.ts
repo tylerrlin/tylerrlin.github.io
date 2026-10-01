@@ -86,8 +86,6 @@ export const walk = {
   bird: null as Bird | null,
   /** Bumped whenever the layout changes, so the scene can redraw. */
   layoutVersion: 0,
-  /** Bumped by every input, so the hint can retire after the first step. */
-  moved: false,
   /** Held-key cruising: -1 / 1 while an arrow is held, else 0 (see applyDrive). */
   drive: 0 as -1 | 0 | 1,
   /** Re-measure the text and re-lay the stops (set by the DOM layer). */
@@ -127,7 +125,6 @@ export function targetStop() {
 export function goToStop(i: number) {
   const k = Math.min(stations.length - 1, Math.max(0, i))
   walk.target = walk.stops[k]
-  walk.moved = true
 }
 
 /** Step to the next/previous stop from where the penguin is headed. */
@@ -160,7 +157,6 @@ function lead() {
 export function nudge(dz: number) {
   const l = lead()
   walk.target = clampZ(Math.min(walk.pos + l, Math.max(walk.pos - l, walk.target + dz)))
-  walk.moved = true
 }
 
 /**
@@ -171,19 +167,13 @@ export function settleAhead(dir: number) {
   if (!dir) return goToStop(nearestStop(walk.target, walk.stops))
   const slack = spacing() * 0.15 // just past a stop counts as being on it
   const z = walk.target - dir * slack
-  const i = dir > 0 ? walk.stops.findIndex((s) => s >= z) : findLastIndex(walk.stops, (s) => s <= z)
+  const i = dir > 0 ? walk.stops.findIndex((s) => s >= z) : walk.stops.findLastIndex((s) => s <= z)
   goToStop(i < 0 ? (dir > 0 ? walk.stops.length - 1 : 0) : i)
-}
-
-function findLastIndex<T>(arr: T[], pred: (v: T) => boolean) {
-  for (let i = arr.length - 1; i >= 0; i--) if (pred(arr[i])) return i
-  return -1
 }
 
 /** Start or stop cruising along the path (a held arrow key). */
 export function startDrive(dir: 1 | -1) {
   walk.drive = dir
-  walk.moved = true
 }
 export function stopDrive() {
   if (!walk.drive) return

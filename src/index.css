@@ -2,7 +2,7 @@
 
 /* The poster layout (name on the horizon, penguin beside it) needs a window
    at least 48rem wide and not much taller than it is wide; otherwise the page
-   stacks. Scene.tsx reads the same query (WIDE_QUERY) to frame the penguin. */
+   stacks. Director.tsx reads the same query (WIDE_QUERY) to frame the penguin. */
 @custom-variant wide (@media (width >= 48rem) and (min-aspect-ratio: 4/5));
 /* The resume walk lays text either side of the path from this width
    (WIDE_MIN in walk/path.ts); below it, text hangs under the path. */
@@ -30,7 +30,7 @@
    Stacked (phones, portrait tablets): everything is a length, built top down
    from the name and the penguin's stage, so the text below the horizon flows
    and the page scrolls on short screens instead of clipping. The stage is a
-   box the penguin fills (Rig in Scene.tsx: feet at 94%, 80% tall); its top
+   box the penguin fills (STAND.narrow in Director.tsx: feet at 94%, 80% tall); its top
    tucks just under the name so the head sits close beneath it. */
 :root {
   color-scheme: light;
@@ -49,14 +49,14 @@
 }
 
 /* Poster: shares of the one-screen hero. The name stands on the horizon and
-   the penguin's feet sit at 85.5% (STAND.wide in Scene.tsx). */
+   the penguin's feet sit at 85.5% (STAND.wide in Director.tsx). */
 @media (width >= 48rem) and (min-aspect-ratio: 4/5) {
   :root {
     --horizon: 63%;
     --sun-x: 53%;
     --sun-y: 50%;
     /* Text inset: 7% of a composition frame capped at 1680px (FRAME in
-       Scene.tsx), centered on ultrawide screens. With the name at most 15vw,
+       Director.tsx), centered on ultrawide screens. With the name at most 15vw,
        "Lin" ends near 49% of the frame and the beak near 57%. */
     --pad-x: calc(max(0px, (100vw - 1680px) / 2) + max(2.5rem, min(7vw, 7.35rem)));
   }
