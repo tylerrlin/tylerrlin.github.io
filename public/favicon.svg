@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The penguin's head in profile, faceted like the model, on a chamfered
+       ice tile. Beak to the left, as it faces on the page. -->
+  <polygon points="10,1 54,1 63,10 63,54 54,63 10,63 1,54 1,10" fill="#dfe4ea"/>
+  <!-- Crown and back of the head: navy planes lit from the upper left -->
+  <polygon points="26,10 42,8 30,24" fill="#434c67"/>
+  <polygon points="42,8 52,18 30,24" fill="#2c344b"/>
+  <polygon points="52,18 54,34 30,24" fill="#1f2536"/>
+  <polygon points="26,10 30,24 18,22" fill="#2c344b"/>
+  <polygon points="54,34 58,58 46,60" fill="#151a27"/>
+  <!-- Beak: long and slim, a stripe of orange underneath -->
+  <polygon points="18,22 3,30 22,27" fill="#1f2536"/>
+  <polygon points="3,30 22,27 20,30" fill="#151a27"/>
+  <polygon points="9,29.5 22,27.5 20,30" fill="#ee962a"/>
+  <!-- Face and cheek -->
+  <polygon points="18,22 30,24 22,27" fill="#2c344b"/>
+  <polygon points="22,27 30,24 28,36" fill="#1f2536"/>
+  <!-- Ear patch -->
+  <polygon points="30,24 54,34 40,36" fill="#ee962a"/>
+  <polygon points="30,24 40,36 28,36" fill="#d27a14"/>
+  <!-- Throat and chest -->
+  <polygon points="28,36 40,36 30,46" fill="#ee962a"/>
+  <polygon points="40,36 54,34 46,60 30,46" fill="#ece9e2"/>
+  <polygon points="28,36 30,46 22,62 18,50" fill="#f6f4ef"/>
+  <polygon points="30,46 46,60 22,62" fill="#dcd8cf"/>
+  <!-- Eye -->
+  <polygon points="25,17 28,15.5 29.5,18 26.5,19.5" fill="#0d1018"/>
+</svg>
