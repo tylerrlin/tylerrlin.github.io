@@ -50,10 +50,12 @@ const FLIPPER = {
 }
 
 // Gaze limits, in radians. Positive pitch looks down.
-const YAW = 0.45
+// The body already faces left (toward the menu), so turns to the right are
+// capped tighter: at most the beak swings round to about face the viewer.
+const YAW = { left: -0.45, right: 0.15 } // positive yaw turns the head to screen-right
 const PITCH = { up: -0.1, down: 0.16 }
 const ROLL = 0.09
-const FOCUS_YAW = 0.5
+const FOCUS_YAW = { left: -0.5, right: 0.2 }
 const FOCUS_PITCH = { up: -0.14, down: 0.3 }
 
 type Gaze = { yaw: number; pitch: number; roll: number }
@@ -68,8 +70,8 @@ function pickGaze(prev: Gaze, home: Gaze): Gaze {
   if (Math.random() < 0.35) {
     return { yaw: home.yaw + MathUtils.randFloatSpread(0.12), pitch: home.pitch, roll: 0 }
   }
-  let yaw = MathUtils.randFloat(-YAW, YAW)
-  if (Math.abs(yaw - prev.yaw) < 0.15) yaw = -yaw * 0.8 // avoid imperceptible moves
+  let yaw = MathUtils.randFloat(YAW.left, YAW.right)
+  if (Math.abs(yaw - prev.yaw) < 0.15) yaw = yaw > -0.15 ? YAW.left * 0.7 : YAW.right * 0.8 // avoid imperceptible moves
   return {
     yaw,
     pitch: MathUtils.randFloat(PITCH.up, PITCH.down),
@@ -204,7 +206,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     const yaw = Math.atan2(dir.x, dir.z)
     const pitch = Math.atan2(-dir.y, Math.hypot(dir.x, dir.z))
     return {
-      yaw: MathUtils.clamp(yaw, -FOCUS_YAW, FOCUS_YAW),
+      yaw: MathUtils.clamp(yaw, FOCUS_YAW.left, FOCUS_YAW.right),
       pitch: MathUtils.clamp(pitch, FOCUS_PITCH.up, FOCUS_PITCH.down),
       roll: MathUtils.clamp(-yaw * 0.08, -ROLL, ROLL),
     }
