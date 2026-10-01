@@ -1,11 +1,7 @@
 # tylerrlin.github.io
 
 <p align="center">
-  <img src="docs/home.webp" alt="Home page: the name Tyler Lin set on a snowy horizon beside a low-poly emperor penguin" width="72%" />
-  <img src="docs/mobile.webp" alt="Home page on a phone" width="23%" />
-</p>
-<p align="center">
-  <img src="docs/resume.webp" alt="Resume walk: a bird's-eye view of the penguin walking a path through the resume" width="96%" />
+  <img src="docs/preview.webp" alt="Tyler Lin's portfolio: the home page with a low-poly emperor penguin on a snowy horizon, the resume walk where the penguin walks a path through the resume, and the phone layout" width="100%" />
 </p>
 
 Visit the live website at [https://tylerrlin.github.io](https://tylerrlin.github.io).
