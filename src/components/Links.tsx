@@ -108,7 +108,8 @@ async function copyText(text: string) {
  * The email glyph copies the address instead of opening a mail app. Hovering
  * or focusing it shows the address in a small box with its own copy button;
  * a tap (no hover on touch) copies and pins the box open until the next tap
- * elsewhere. Whichever control copied turns to a check for a moment.
+ * elsewhere. Either way of copying shows the box, and its copy button turns
+ * to a check for a moment.
  */
 function EmailButton() {
   const root = useRef<HTMLLIElement>(null)
@@ -121,7 +122,7 @@ function EmailButton() {
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const [pinned, setPinned] = useState(false)
-  const [copied, setCopied] = useState<'icon' | 'box' | null>(null)
+  const [copied, setCopied] = useState(false)
   const [shift, setShift] = useState(0)
   const open = hovered || focused || pinned
 
@@ -131,13 +132,19 @@ function EmailButton() {
     setPinned(false)
   }
 
-  const copy = async (from: 'icon' | 'box') => {
+  const copy = async () => {
+    // Open the box (again, after Esc) by whatever brought the click.
     if (pointer.current === 'touch') setPinned(true)
+    else if (pointer.current) setHovered(true)
+    else {
+      dismissed.current = false
+      setFocused(true)
+    }
     pointer.current = ''
     if (!(await copyText(email))) return
-    setCopied(from)
+    setCopied(true)
     clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setCopied(null), COPIED_MS)
+    timer.current = window.setTimeout(() => setCopied(false), COPIED_MS)
   }
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -194,7 +201,7 @@ function EmailButton() {
         aria-label="Copy email address"
         aria-describedby={`${id}-address`}
         onPointerDown={(e) => void (pointer.current = e.pointerType)}
-        onClick={() => copy('icon')}
+        onClick={copy}
         {...glance}
         className="facets group relative grid size-12 cursor-pointer place-items-center focus-visible:outline-offset-2"
       >
@@ -203,7 +210,7 @@ function EmailButton() {
           viewBox="0 0 24 24"
           className="relative z-10 size-7 transition-transform duration-300 ease-out-soft group-hover:-translate-y-[3px] group-focus-visible:-translate-y-[3px] md:size-[30px]"
         >
-          {copied === 'icon' ? CHECK : ICONS.email}
+          {ICONS.email}
         </svg>
         <span
           aria-hidden
@@ -226,11 +233,12 @@ function EmailButton() {
           <button
             type="button"
             aria-label="Copy"
-            onClick={() => copy('box')}
+            onPointerDown={(e) => void (pointer.current = e.pointerType)}
+            onClick={copy}
             className="chamfer-sm grid size-8 shrink-0 cursor-pointer place-items-center text-navy-soft transition-colors duration-300 hover:bg-navy/8 hover:text-navy focus-visible:outline-offset-[-3px]"
           >
-            <svg aria-hidden viewBox={copied === 'box' ? '0 0 24 24' : '0 0 12 12'} className="size-3.5">
-              {copied === 'box' ? CHECK : COPY}
+            <svg aria-hidden viewBox={copied ? '0 0 24 24' : '0 0 12 12'} className="size-3.5">
+              {copied ? CHECK : COPY}
             </svg>
           </button>
         </div>
