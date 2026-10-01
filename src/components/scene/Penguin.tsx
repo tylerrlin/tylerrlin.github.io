@@ -16,13 +16,27 @@ import {
   Vector3,
 } from 'three'
 import { attention, currentPointer } from '../../attention'
+import { walker } from '../../walk/state'
 
 const MODEL_URL = '/penguin.glb'
 
 const SCALE = 1
 const MODEL_HEIGHT = 1.334 // model units, feet at y = 0
 export const PENGUIN_HEIGHT = MODEL_HEIGHT * SCALE
-const FACING = -0.42 // body yaw: a three-quarter turn toward the text
+
+// Walking, procedurally (the mesh has no skeleton). Feet: measured from the
+// mesh, the feet are the vertices below y ≈ 0.1 with |x| > 0.1, from z = -0.05
+// to 0.19; the tail also reaches the ground but sits at |x| < 0.1, z < -0.2.
+// Each foot slides back under the body while planted and swings forward,
+// lifted, while the other one bears the weight. The body waddles over the
+// planted foot, bobs twice per cycle, and holds its flippers out for balance.
+const FEET = {
+  height: { from: 0.05, to: 0.115 }, // weight fades out up the ankle
+  inner: { from: 0.07, to: 0.1 }, // |x| ramp: excludes the tail
+  back: { from: -0.16, to: -0.09 }, // z ramp: excludes the tail
+  lift: 0.07,
+}
+const WADDLE = { roll: 0.085, bob: 0.022, twist: 0.07, lean: 0.07, flare: 0.26, flap: 0.1 }
 
 // Model-space landmarks (the model is Y-up, beak toward +Z).
 const NECK_PIVOT = new Vector3(0, 0.95, 0.01)
@@ -101,6 +115,14 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       uFlipBottom: { value: [FLIPPER.bottom.from, FLIPPER.bottom.to] },
       uTuck: { value: FLIPPER.tuck },
       uFlipLen: { value: FLIPPER.length },
+      uWalk: { value: 0 },
+      uPhase: { value: 0 },
+      uStride: { value: 0.3 },
+      uFeetY: { value: [FEET.height.from, FEET.height.to] },
+      uFeetX: { value: [FEET.inner.from, FEET.inner.to] },
+      uFeetZ: { value: [FEET.back.from, FEET.back.to] },
+      uLift: { value: FEET.lift },
+      uFlare: { value: [WADDLE.flare, WADDLE.flap] },
     }),
     [],
   )
@@ -130,6 +152,14 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
             uniform vec2 uFlipBottom;
             uniform float uTuck;
             uniform float uFlipLen;
+            uniform float uWalk;
+            uniform float uPhase;
+            uniform float uStride;
+            uniform vec2 uFeetY;
+            uniform vec2 uFeetX;
+            uniform vec2 uFeetZ;
+            uniform float uLift;
+            uniform vec2 uFlare;
             mat3 rotZ(float a) {
               float c = cos(a), s = sin(a);
               return mat3(c, s, 0.0, -s, c, 0.0, 0.0, 0.0, 1.0);
@@ -142,7 +172,11 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
             float flipW = smoothstep(uFlipMask.x, uFlipMask.y, abs(position.x))
               * (1.0 - smoothstep(uFlipTop.x, uFlipTop.y, position.y))
               * smoothstep(uFlipBottom.x, uFlipBottom.y, position.y);
-            mat3 flipRot = rotZ(-side * uTuck * flipW);
+            // Each side's step phase: the right foot (-x) runs half a cycle behind.
+            float footPhase = uPhase + (side > 0.0 ? 0.0 : PI);
+            // Walking, the flippers come out for balance and swing gently.
+            float flare = uWalk * (uFlare.x + uFlare.y * sin(footPhase + 1.2));
+            mat3 flipRot = rotZ(-side * (uTuck - flare) * flipW);
             vec3 shoulder = vec3(side * uShoulder.x, uShoulder.yz);
             float headW = smoothstep(uNeckBlend.x, uNeckBlend.y, position.y)
               * (1.0 - smoothstep(uHeadWidth.x, uHeadWidth.y, abs(position.x)));
@@ -155,10 +189,30 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
             vec3 fromShoulder = transformed - shoulder;
             fromShoulder.y *= mix(1.0, uFlipLen, flipW);
             transformed = shoulder + flipRot * fromShoulder;
-            transformed = mix(transformed, uNeckPivot + uHead * (transformed - uNeckPivot), headW);`,
+            transformed = mix(transformed, uNeckPivot + uHead * (transformed - uNeckPivot), headW);
+            // Feet: planted for the first half of each foot's cycle, sliding
+            // back under the body exactly as fast as the body moves forward
+            // (the phase advances with distance), then lifted and swung ahead.
+            float footW = (1.0 - smoothstep(uFeetY.x, uFeetY.y, position.y))
+              * smoothstep(uFeetX.x, uFeetX.y, abs(position.x))
+              * smoothstep(uFeetZ.x, uFeetZ.y, position.z) * uWalk;
+            if (footW > 0.0) {
+              float u = fract(footPhase / (2.0 * PI));
+              float reach;
+              float lift = 0.0;
+              if (u < 0.5) {
+                reach = 0.5 - 2.0 * u;
+              } else {
+                float w = (u - 0.5) * 2.0;
+                reach = -0.5 + smoothstep(0.0, 1.0, w);
+                lift = sin(PI * w);
+              }
+              transformed.z += footW * reach * uStride;
+              transformed.y += footW * lift * uLift;
+            }`,
           )
       }
-      material.customProgramCacheKey = () => 'penguin-head-flippers'
+      material.customProgramCacheKey = () => 'penguin-head-flippers-walk'
       material.needsUpdate = true
     })
     // Reveal after the patched shader has had a frame to compile.
@@ -184,6 +238,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       hit: new Vector3(),
       head: new Vector3(),
       q: new Quaternion(),
+      bodyYaw: 0,
     }),
     [],
   )
@@ -216,9 +271,31 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     const t = clock.elapsedTime
     const dt = Math.min(delta, 0.1) // avoid a jump after a backgrounded tab
     const still = reducedMotionQuery?.matches ?? false
+    // Dev only: window.__penguinPose = { phase, amount } freezes the step
+    // cycle at a pose, for inspecting the walk frame by frame.
+    const pose = import.meta.env.DEV
+      ? (window as { __penguinPose?: { phase: number; amount: number } }).__penguinPose
+      : undefined
+    const walking = pose?.amount ?? walker.amount
+    const away = walker.resume > 0.02 // on the resume walk, or flying there
+
+    // The scene's walk places and turns the whole bird.
+    if (outer.current) {
+      outer.current.position.set(walker.x, 0, walker.z)
+      outer.current.rotation.y = walker.heading
+    }
+    state.plane.constant = walker.z + 1.1 // keep the gaze plane in front of it
 
     let speed = 1
-    if (attention.version !== state.seen) {
+    if (away) {
+      // Eyes on the path: level, a touch down, no glances at the cursor.
+      state.target.yaw = 0
+      state.target.pitch = 0.12
+      state.target.roll = 0
+      state.seen = attention.version
+      state.following = false
+      state.nextChange = t + 1.5
+    } else if (attention.version !== state.seen) {
       // A link was hovered or focused: look at it and hold a moment.
       state.seen = attention.version
       const focus = gazeToward(attention.x, attention.y)
@@ -258,20 +335,34 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     gaze.pitch = MathUtils.damp(gaze.pitch, target.pitch, 2.6 * k, dt)
     gaze.roll = MathUtils.damp(gaze.roll, target.roll, 2.2 * k, dt)
 
-    state.euler.set(gaze.pitch, gaze.yaw, gaze.roll)
-    uniforms.uHead.value.setFromMatrix4(state.m4.makeRotationFromEuler(state.euler))
+    // The waddle: roll over the planted foot (the left foot, +x, swings while
+    // sin(phase) < 0), bob up at each mid-stance, twist the hips toward the
+    // swinging foot and lean into the walk. The head counters most of the roll.
+    const phase = pose?.phase ?? walker.phase
+    const roll = -Math.sin(phase) * WADDLE.roll * walking
 
-    // Body: slow breathing, a gentle weight shift, and a slight follow of the head.
-    if (body.current && !still) {
-      const breath = Math.sin(t * 1.7)
-      body.current.scale.set(1 - breath * 0.004, 1 + breath * 0.008, 1 - breath * 0.004)
-      body.current.rotation.z = Math.sin(t * 0.45) * 0.012
-      body.current.rotation.y = MathUtils.damp(body.current.rotation.y, gaze.yaw * 0.18, 1.2, dt)
+    state.euler.set(gaze.pitch, gaze.yaw, gaze.roll - roll * 0.75)
+    uniforms.uHead.value.setFromMatrix4(state.m4.makeRotationFromEuler(state.euler))
+    uniforms.uWalk.value = walking
+    uniforms.uPhase.value = phase
+    uniforms.uStride.value = walker.stride
+
+    // Body: slow breathing, a gentle weight shift, and a slight follow of the
+    // head when idle; the waddle when walking.
+    if (body.current) {
+      const b = body.current
+      const breath = still ? 0 : Math.sin(t * 1.7) * (1 - walking)
+      b.scale.set(1 - breath * 0.004, 1 + breath * 0.008, 1 - breath * 0.004)
+      state.bodyYaw = MathUtils.damp(state.bodyYaw, gaze.yaw * 0.18, 1.2, dt)
+      b.rotation.z = (still ? 0 : Math.sin(t * 0.45) * 0.012 * (1 - walking)) + roll
+      b.rotation.y = state.bodyYaw + Math.sin(phase) * WADDLE.twist * walking
+      b.rotation.x = WADDLE.lean * walking
+      b.position.y = ((1 - Math.cos(2 * phase)) / 2) * WADDLE.bob * walking
     }
   })
 
   return (
-    <group ref={outer} rotation={[0, FACING, 0]} scale={SCALE}>
+    <group ref={outer} rotation={[0, walker.heading, 0]} scale={SCALE}>
       <group ref={body}>
         <primitive object={scene} />
       </group>

@@ -1,63 +1,20 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
-import { CanvasTexture, SRGBColorSpace, type PerspectiveCamera } from 'three'
-import Penguin, { PENGUIN_HEIGHT } from './Penguin'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { CanvasTexture, Group, SRGBColorSpace } from 'three'
+import Penguin from './Penguin'
+import Director from './Director'
 import { installPointerTracking } from '../../attention'
-
-const FOV = 28
+import { getMode, subscribeMode, walker } from '../../walk/state'
 
 /** The `wide` variant in index.css. One query, so CSS and the camera agree. */
 export const WIDE_QUERY = '(width >= 48rem) and (min-aspect-ratio: 4/5)'
-/** The poster composition never spreads wider than this (App.tsx, --frame). */
-const FRAME = 1680
-
-// Where the penguin stands, in shares of the canvas: `x` its center (of the
-// composition frame), `feet` from the top, `height` its height, capped at
-// `maxW` of the frame width so squat windows shrink it instead of crowding
-// the type. Poster: the canvas is the hero, feet just below --horizon (63%).
-// Stacked: the canvas is the stage box in index.css (feet at 94%, 80% tall).
-const STAND = {
-  wide: { x: 0.69, feet: 0.855, height: 0.62, maxW: 0.36 },
-  narrow: { x: 0.52, feet: 0.94, height: 0.8, maxW: 0.8 },
-}
-
-function subscribe(cb: () => void) {
-  const mq = window.matchMedia(WIDE_QUERY)
-  mq.addEventListener('change', cb)
-  return () => mq.removeEventListener('change', cb)
-}
-const isWide = () => window.matchMedia(WIDE_QUERY).matches
-
-function Rig() {
-  const camera = useThree((s) => s.camera) as PerspectiveCamera
-  const size = useThree((s) => s.size)
-  const wide = useSyncExternalStore(subscribe, isWide)
-
-  useEffect(() => {
-    const { width: w, height: h } = size
-    const stand = wide ? STAND.wide : STAND.narrow
-    const frame = Math.min(w, FRAME)
-    const px = Math.min(stand.height * h, stand.maxW * frame)
-    const viewH = (PENGUIN_HEIGHT * h) / px // world units spanned by the canvas height
-    const dist = viewH / (2 * Math.tan((FOV * Math.PI) / 360))
-    const targetY = (stand.feet - 0.5) * viewH
-    camera.position.set(0, targetY + dist * 0.07, dist)
-    camera.lookAt(0, targetY, 0)
-    // Shift the lens rather than the camera, so the penguin keeps the same
-    // straight-on view wherever it stands in the frame.
-    const x = (w - frame) / 2 + stand.x * frame
-    camera.setViewOffset(w, h, w / 2 - x, 0, w, h)
-    camera.updateProjectionMatrix()
-  }, [camera, size, wide])
-
-  return null
-}
 
 export default function Scene() {
   const host = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(true)
   const [ready, setReady] = useState(false)
   const onReady = useCallback(() => setReady(true), [])
+  const resume = useSyncExternalStore(subscribeMode, getMode) === 'resume'
 
   useEffect(installPointerTracking, [])
 
@@ -81,12 +38,12 @@ export default function Scene() {
       <Canvas
         flat
         dpr={[1, 1.5]}
-        frameloop={visible ? 'always' : 'never'}
-        camera={{ fov: FOV, near: 0.1, far: 50 }}
+        frameloop={visible || resume ? 'always' : 'never'}
+        camera={{ fov: 28, near: 0.1, far: 400 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         aria-hidden
       >
-        <Rig />
+        <Director />
         {/* The model's colors are flat vertex colors (navy, ice, orange) and the
             canvas renders them untonemapped. A strong, near-white sky fill keeps
             the belly white even on facets turned away from the sun; a moderate
@@ -110,8 +67,10 @@ export default function Scene() {
 /**
  * A soft navy shadow under the feet: one textured quad, no extra render pass.
  * Wider than deep and nudged to the right, away from the low sun on the left.
+ * It follows the penguin along the path but keeps to the sun, not the body.
  */
 function FloorShadow() {
+  const group = useRef<Group>(null)
   const texture = useMemo(() => {
     const c = document.createElement('canvas')
     c.width = c.height = 128
@@ -128,10 +87,13 @@ function FloorShadow() {
     return t
   }, [])
   useEffect(() => () => texture.dispose(), [texture])
+  useFrame(() => group.current?.position.set(walker.x, 0, walker.z))
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.002, 0.02]} scale={[1.25, 0.62, 1]} renderOrder={-1}>
-      <planeGeometry />
-      <meshBasicMaterial map={texture} transparent opacity={0.38} depthWrite={false} toneMapped={false} />
-    </mesh>
+    <group ref={group}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.1, 0.002, 0.02]} scale={[1.25, 0.62, 1]} renderOrder={-1}>
+        <planeGeometry />
+        <meshBasicMaterial map={texture} transparent opacity={0.38} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </group>
   )
 }

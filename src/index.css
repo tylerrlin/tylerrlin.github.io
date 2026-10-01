@@ -4,6 +4,10 @@
    at least 48rem wide and not much taller than it is wide; otherwise the page
    stacks. Scene.tsx reads the same query (WIDE_QUERY) to frame the penguin. */
 @custom-variant wide (@media (width >= 48rem) and (min-aspect-ratio: 4/5));
+/* The resume walk lays text either side of the path from this width
+   (WIDE_MIN in walk/path.ts); below it, text hangs under the path. */
+@custom-variant wide-walk (@media (width >= 45rem));
+@custom-variant coarse (@media (pointer: coarse));
 
 @theme {
   /* Palette drawn from the penguin: navy back, ice belly, orange ear patch. */
@@ -115,6 +119,7 @@ body {
   *::after {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -134,4 +139,69 @@ body {
 .facets:hover .fl,
 .facets:focus-visible .fl {
   fill: #5d6886;
+}
+
+/* The resume walk (components/resume). The scene positions every block each
+   frame with a transform; sizes come from here and feed the path layout. */
+.resume-layer {
+  opacity: 0;
+  visibility: hidden;
+}
+.rw-block {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  will-change: transform, opacity;
+}
+.rw-section {
+  width: max-content;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.rw-entry,
+.rw-line {
+  width: calc(100vw - 48px);
+}
+.rw-line {
+  padding-left: 1.5rem;
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.rw-mark {
+  position: absolute;
+  top: 0.42em;
+  left: 0.15rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  transition: transform 0.4s var(--ease-out-soft);
+}
+.rw-line[data-current] .rw-mark {
+  transform: scale(1.25);
+}
+@media (width >= 45rem) {
+  .rw-section {
+    font-size: clamp(3.25rem, 5vw, 4.5rem);
+    text-align: right;
+  }
+  .rw-entry {
+    width: min(20rem, calc(50vw - 54px - 2.5rem));
+    text-align: right;
+  }
+  .rw-line {
+    width: min(27rem, calc(50vw - 54px - 2.5rem));
+    font-size: 16px;
+  }
+}
+.rw-nav {
+  color: color-mix(in oklab, var(--color-navy-soft) 80%, transparent);
+  transition: color 0.3s var(--ease-out-soft);
+}
+.rw-nav:hover,
+.rw-nav[aria-current] {
+  color: var(--color-navy);
 }

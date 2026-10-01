@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { profile, socials, type SocialLink } from '../content'
+import { socials, type SocialLink } from '../content'
+import { enterResume } from '../walk/state'
 import { lookAt } from '../attention'
 
 // Low-poly glyphs that match the penguin: flat facets in three navy tones, an
@@ -61,28 +62,28 @@ export default function Links() {
   return (
     <nav aria-label="Links" className="flex items-center justify-center gap-3 min-[25rem]:gap-4 wide:justify-start">
       <a
-        href={profile.resume}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="#resume"
+        data-resume-link
+        onClick={(e) => {
+          e.preventDefault()
+          enterResume()
+        }}
         {...glance}
         className="group block focus-visible:outline-offset-2"
       >
         {/* Chamfered corners, cut like one of the penguin's facets. */}
         <span className="chamfer flex h-12 items-center gap-3 bg-navy pr-4 pl-5 text-[15px] min-[25rem]:pr-5 min-[25rem]:pl-6 font-medium tracking-[0.01em] text-snow transition-colors duration-300 group-hover:bg-navy-soft">
           Resume
-          <span aria-hidden className="font-mono text-[10px] tracking-[0.18em] text-orange">
-            PDF
-          </span>
           <svg
             aria-hidden
             viewBox="0 0 12 12"
-            className="size-3 transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            className="size-3 transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5"
           >
-            <polygon points="3,1 11,1 11,9" fill="var(--color-orange)" />
-            <polygon points="1,9.6 9,1.6 10.4,3 2.4,11" fill="var(--color-snow)" />
+            <polygon points="7,1 11.4,6 7,6" fill="var(--color-orange)" />
+            <polygon points="11.4,6 7,11 7,6" fill="#d27a14" />
+            <polygon points="0.6,5 9,5 9,7 0.6,7" fill="var(--color-snow)" />
           </svg>
         </span>
-        <span className="sr-only"> (PDF, opens in a new tab)</span>
       </a>
 
       <span aria-hidden className="h-7 w-px bg-navy/20" />
