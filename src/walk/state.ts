@@ -43,6 +43,8 @@ export const walk = {
   layoutVersion: 0,
   /** Bumped by every input, so the hint can retire after the first step. */
   moved: false,
+  /** Held-key cruising: -1 / 1 while an arrow is held, else 0 (see applyDrive). */
+  drive: 0 as -1 | 0 | 1,
 }
 
 /** Elements the scene writes to every frame. Registered by ref callbacks. */
@@ -97,37 +99,55 @@ export function goToSection(section: number) {
   goToStop(stations.findIndex((s) => s.kind === 'section' && s.section === section))
 }
 
-/** How many stops the target may run ahead of the penguin during free movement. */
-const MAX_LEAD = 2
+/** Average distance between stops, world units. */
+function spacing() {
+  return (last() - walk.stops[0]) / Math.max(1, walk.stops.length - 1)
+}
+
+/** How far the target may run ahead of the penguin: a smooth distance, not a stop count. */
+function lead() {
+  return spacing() * 1.6
+}
 
 /** Free movement (wheel, drag), in world units. Never far ahead of the penguin. */
 export function nudge(dz: number) {
-  const here = nearestStop(walk.pos, walk.stops)
-  const lo = walk.stops[Math.max(0, here - MAX_LEAD)]
-  const hi = walk.stops[Math.min(walk.stops.length - 1, here + MAX_LEAD)]
-  walk.target = Math.min(hi, Math.max(lo, clampZ(walk.target + dz)))
+  const l = lead()
+  walk.target = clampZ(Math.min(walk.pos + l, Math.max(walk.pos - l, walk.target + dz)))
   walk.moved = true
 }
 
-/** A held arrow key: take the next step only once the penguin has reached this one. */
-export function stepHeld(dir: 1 | -1) {
-  if (nearestStop(walk.pos, walk.stops) !== targetStop()) return
-  step(dir)
+/**
+ * Settle after free movement or cruising: on the first stop at or past the
+ * target in the direction of travel, so the penguin never turns back.
+ */
+export function settleAhead(dir: number) {
+  if (!dir) return goToStop(nearestStop(walk.target, walk.stops))
+  const slack = spacing() * 0.15 // just past a stop counts as being on it
+  const z = walk.target - dir * slack
+  const i = dir > 0 ? walk.stops.findIndex((s) => s >= z) : findLastIndex(walk.stops, (s) => s <= z)
+  goToStop(i < 0 ? (dir > 0 ? walk.stops.length - 1 : 0) : i)
 }
 
-/**
- * Settle on a stop after free movement: the nearest one, but at least one stop
- * on from `from` once the gesture has gone a fifth of the way there.
- */
-export function settle(from: number) {
-  const k = nearestStop(walk.target, walk.stops)
-  const moved = walk.target - walk.stops[from]
-  if (k === from && Math.abs(moved) > 0.001) {
-    const next = from + Math.sign(moved)
-    const span = Math.abs((walk.stops[next] ?? walk.stops[from]) - walk.stops[from])
-    if (span && Math.abs(moved) > span * 0.2) return goToStop(next)
-  }
-  goToStop(k)
+function findLastIndex<T>(arr: T[], pred: (v: T) => boolean) {
+  for (let i = arr.length - 1; i >= 0; i--) if (pred(arr[i])) return i
+  return -1
+}
+
+/** Start or stop cruising along the path (a held arrow key). */
+export function startDrive(dir: 1 | -1) {
+  walk.drive = dir
+  walk.moved = true
+}
+export function stopDrive() {
+  if (!walk.drive) return
+  const dir = walk.drive
+  walk.drive = 0
+  settleAhead(dir)
+}
+
+/** Called every frame by the scene: while cruising, keep the target a steady lead ahead. */
+export function applyDrive() {
+  if (walk.drive) walk.target = clampZ(walk.pos + walk.drive * lead() * 0.9)
 }
 
 /** Re-lay the stops, keeping the penguin at the same place in the reading. */

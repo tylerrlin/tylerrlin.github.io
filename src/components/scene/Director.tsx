@@ -4,7 +4,7 @@ import { MathUtils, Vector3, type PerspectiveCamera } from 'three'
 import { PENGUIN_HEIGHT } from './Penguin'
 import { drawGround, makeRidges, type Print, type ScreenPoint } from './ground'
 import { stations } from '../../resume'
-import { dom, getMode, HOME_FACING, walk, walker, currentBird } from '../../walk/state'
+import { applyDrive, dom, getMode, HOME_FACING, walk, walker, currentBird } from '../../walk/state'
 import {
   BELOW,
   BODY_LIFT,
@@ -229,6 +229,7 @@ export default function Director() {
     const prevX = walker.x
     const prevZ = walker.z
     if (!reduce) {
+      applyDrive()
       const gap = walk.target - walk.pos
       s.vel += (OMEGA * OMEGA * gap - 2 * OMEGA * s.vel) * dt
       const vmax = MathUtils.clamp(Math.abs(gap) * 1.5, SPEED.walk, SPEED.run)

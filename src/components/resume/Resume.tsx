@@ -11,11 +11,11 @@ import {
   leap,
   nudge,
   setStops,
-  settle,
+  settleAhead,
+  startDrive,
+  stopDrive,
   step,
-  stepHeld,
   subscribeMode,
-  targetStop,
   walk,
 } from '../../walk/state'
 
@@ -133,6 +133,8 @@ export function ResumeText() {
 }
 
 const WHEEL_SETTLE_MS = 160
+/** How long an arrow must be held before the penguin starts cruising. */
+const HOLD_MS = 240
 
 /** Keep Tab cycling through the walk's controls; the home page is inert behind them. */
 function trapTab(e: KeyboardEvent) {
@@ -171,30 +173,32 @@ export function ResumeHud() {
     const bird = () => currentBird()
     const retire = () => setHinted(true)
 
-    let wheelFrom = -1
+    let wheelDir = 0 // direction of the current wheel gesture
     let wheelTimer = 0
+    let holdTimer = 0 // a held arrow turns into cruising after HOLD_MS
+    let heldKey = ''
     // Until the scene is running, the resume is a plain scrolling column.
     const live = () => dom.textLayer?.hasAttribute('data-live') ?? false
 
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || !live()) return // pinch zoom, or the plain column
       e.preventDefault()
-      if (wheelFrom < 0) wheelFrom = targetStop()
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? bird().vh : 1
       const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX
+      if (dy) wheelDir = Math.sign(dy)
       nudge((dy * unit) / bird().alongPx)
       clearTimeout(wheelTimer)
       wheelTimer = window.setTimeout(() => {
-        settle(wheelFrom)
-        wheelFrom = -1
+        settleAhead(wheelDir)
+        wheelDir = 0
       }, WHEEL_SETTLE_MS)
       retire()
     }
 
-    let touch: { y: number; from: number; t: number; vy: number } | null = null
+    let touch: { y: number; dir: number; t: number; vy: number } | null = null
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1 || !live()) return (touch = null)
-      touch = { y: e.touches[0].clientY, from: targetStop(), t: e.timeStamp, vy: 0 }
+      touch = { y: e.touches[0].clientY, dir: 0, t: e.timeStamp, vy: 0 }
     }
     const onTouchMove = (e: TouchEvent) => {
       if (!touch) return
@@ -205,6 +209,7 @@ export function ResumeHud() {
       touch.vy = 0.8 * touch.vy + 0.2 * (dy / dt) // px per ms, smoothed
       touch.y = y
       touch.t = e.timeStamp
+      if (dy) touch.dir = Math.sign(dy)
       nudge(dy / bird().alongPx)
       retire()
     }
@@ -212,7 +217,7 @@ export function ResumeHud() {
       if (!touch) return
       // A flick carries on a little before settling.
       nudge((touch.vy * 180) / bird().alongPx)
-      settle(touch.from)
+      settleAhead(touch.dir)
       touch = null
     }
 
@@ -229,14 +234,18 @@ export function ResumeHud() {
       switch (e.key) {
         case 'ArrowDown':
         case 'ArrowRight':
-          if (e.repeat) stepHeld(1)
-          else step(1)
-          break
         case 'ArrowUp':
-        case 'ArrowLeft':
-          if (e.repeat) stepHeld(-1)
-          else step(-1)
+        case 'ArrowLeft': {
+          // A tap steps one stop; holding cruises at a steady pace (auto-repeat is ignored).
+          if (e.repeat) break
+          const dir = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1
+          stopDrive()
+          clearTimeout(holdTimer)
+          heldKey = e.key
+          step(dir)
+          holdTimer = window.setTimeout(() => heldKey === e.key && startDrive(dir), HOLD_MS)
           break
+        }
         case 'PageDown':
           leap(1)
           break
@@ -267,8 +276,22 @@ export function ResumeHud() {
     window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend', onTouchEnd)
     window.addEventListener('touchcancel', onTouchEnd)
+    const release = () => {
+      clearTimeout(holdTimer)
+      heldKey = ''
+      stopDrive()
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === heldKey) release()
+    }
+
     window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', release)
     return () => {
+      release()
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', release)
       clearTimeout(wheelTimer)
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('touchstart', onTouchStart)

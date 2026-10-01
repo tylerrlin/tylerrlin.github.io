@@ -10,8 +10,32 @@ Personal portfolio — minimalist game-menu home screen with a low-poly 3D pengu
 
 ## Content
 
-Name, role and social links live in `src/content.ts`. The resume text lives
-in `src/resume.ts`; the resume walk lays it out along a path in the snow.
+Name, role and social links live in `src/content.ts`.
+
+The resume lives in [`resume.json`](resume.json) at the repo root. Edit it to
+change the walk; no code changes needed. Sections appear in file order, and each
+entry becomes a stop on the path, followed by one stop per bullet:
+
+```json
+{
+  "sections": [
+    {
+      "title": "Experience",
+      "entries": [
+        {
+          "org": "Company",
+          "role": "Job title (optional)",
+          "dates": "May 2024 – Sep 2024",
+          "bullets": ["One stop per bullet."]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`npm run build` type-checks the file, so a missing or misspelled field fails
+the build with an error pointing at it.
 
 ## Development
 
