@@ -32,12 +32,7 @@ export default function App() {
       </div>
 
       <div className="rise-in relative px-6 pt-[calc(var(--feet)+clamp(1.5rem,4.5svh,3rem))] pb-14 text-center [animation-delay:120ms] wide:absolute wide:inset-x-0 wide:top-[calc(var(--horizon)+clamp(1.75rem,8svh,4.5rem))] wide:p-0 wide:px-(--pad-x) wide:text-left">
-        <p className="text-base leading-snug text-slate wide:text-[clamp(1rem,2.1svh,1.1875rem)]">
-          {profile.tagline}
-        </p>
-        <div className="mt-[clamp(1.25rem,3svh,2rem)]">
-          <Links />
-        </div>
+        <Links />
       </div>
     </main>
   )

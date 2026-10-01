@@ -9,7 +9,6 @@
   /* Palette drawn from the penguin: navy back, ice belly, orange ear patch. */
   --color-navy: #1f2536;
   --color-navy-soft: #3a4257; /* secondary text, >= 7:1 on sky and snow */
-  --color-slate: #525b70; /* quiet text (tagline), 5.6:1 on snow */
   --color-ice: #ece9e2;
   --color-snow: #f6f4ef;
   --color-orange: #ee962a;
@@ -33,9 +32,9 @@
   color-scheme: light;
   --name-size: min(26vw, 12.5svh);
   --stage: clamp(12rem, 54svh, 36rem);
-  /* Center the whole stack (name, penguin, then tagline and links, about
-     9rem) when there is room; short screens keep a fixed top margin. */
-  --stack: calc(1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.82 + 9rem);
+  /* Center the whole stack (name, penguin, then the links row, about
+     6rem) when there is room; short screens keep a fixed top margin. */
+  --stack: calc(1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.82 + 6rem);
   --name-top: max(clamp(1.75rem, 6svh, 4.5rem), (100svh - var(--stack)) * 0.5);
   --horizon: calc(var(--name-top) + 1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.68);
   --stage-top: calc(var(--horizon) - var(--stage) * 0.8);

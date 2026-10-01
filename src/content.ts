@@ -3,7 +3,6 @@
 export const profile = {
   name: 'Tyler Lin',
   role: 'Software engineer',
-  tagline: 'Building thoughtful software.',
   resume: '/resume.pdf',
 }
 
