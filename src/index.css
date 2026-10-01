@@ -1,0 +1,353 @@
+@import "tailwindcss";
+
+/* The poster layout (name on the horizon, penguin beside it) needs a window
+   at least 48rem wide and not much taller than it is wide; otherwise the page
+   stacks. Director.tsx reads the same query (WIDE_QUERY) to frame the penguin. */
+@custom-variant wide (@media (width >= 48rem) and (min-aspect-ratio: 4/5));
+/* The resume walk lays text either side of the path from this width
+   (WIDE_MIN in walk/path.ts); below it, text hangs under the path. */
+@custom-variant wide-walk (@media (width >= 45rem));
+@custom-variant coarse (@media (pointer: coarse));
+
+@theme {
+  /* Palette drawn from the penguin: navy back, ice belly, orange ear patch. */
+  --color-navy: #1f2536;
+  --color-navy-soft: #3a4257; /* secondary text, >= 7:1 on sky and snow */
+  --color-ice: #ece9e2;
+  --color-snow: #f6f4ef;
+  --color-orange: #ee962a;
+  --color-ember: #a8570f; /* focus ring on light, 4.9:1 on ice */
+
+  --font-display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* One coordinate system for sky, ridges, snowfield, sun, penguin and type.
+
+   Stacked (phones, portrait tablets): everything is a length, built top down
+   from the name and the penguin's stage, so the text below the horizon flows
+   and the page scrolls on short screens instead of clipping. The stage is a
+   box the penguin fills (STAND.narrow in Director.tsx: feet at 94%, 80% tall); its top
+   tucks just under the name so the head sits close beneath it. */
+:root {
+  color-scheme: light;
+  --name-size: min(26vw, 12.5svh);
+  --stage: clamp(12rem, 54svh, 36rem);
+  /* Center the whole stack (name, penguin, then the links row, about
+     6rem) when there is room; short screens keep a fixed top margin. */
+  --stack: calc(1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.82 + 7.5rem);
+  --name-top: max(clamp(1.75rem, 6svh, 4.5rem), (100svh - var(--stack)) * 0.5);
+  --horizon: calc(var(--name-top) + 1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.68);
+  --stage-top: calc(var(--horizon) - var(--stage) * 0.8);
+  --feet: calc(var(--horizon) + var(--stage) * 0.14);
+  /* The low sun sits right behind the penguin, framing it. */
+  --sun-x: 50%;
+  --sun-y: calc(var(--horizon) - var(--stage) * 0.36);
+}
+
+/* Poster: shares of the one-screen hero. The name stands on the horizon and
+   the penguin's feet sit at 85.5% (STAND.wide in Director.tsx). */
+@media (width >= 48rem) and (min-aspect-ratio: 4/5) {
+  :root {
+    --horizon: 63%;
+    --sun-x: 53%;
+    --sun-y: 50%;
+    /* Text inset: 7% of a composition frame capped at 1680px (FRAME in
+       Director.tsx), centered on ultrawide screens. With the name at most 15vw,
+       "Lin" ends near 49% of the frame and the beak near 57%. */
+    --pad-x: calc(max(0px, (100vw - 1680px) / 2) + max(2.5rem, min(7vw, 7.35rem)));
+  }
+}
+
+/* Low-poly corners, matching the faceted icons. */
+.chamfer {
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+}
+
+html {
+  background-color: var(--color-ice);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--color-ice);
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-orange) 35%, transparent);
+  color: var(--color-navy);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.9s var(--ease-out-soft) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Faceted link glyphs (Links.tsx): three navy planes lit from the upper left,
+   an orange accent, snow cutouts. On hover the lit planes catch the low sun. */
+.facets polygon {
+  transition: fill 0.35s var(--ease-out-soft);
+}
+.facets .fd { fill: var(--color-navy); }
+.facets .fm { fill: #2c344b; }
+.facets .fl { fill: #434c67; }
+.facets .fk { fill: #151a27; }
+.facets .fs { fill: var(--color-orange); }
+.facets .fsd { fill: #d27a14; }
+.facets .fi { fill: var(--color-snow); }
+.facets:hover .fl,
+.facets:focus-visible .fl {
+  fill: #5d6886;
+}
+
+/* The email box (Links.tsx): a chamfered slip of snow over the glyph. */
+.email-pop {
+  z-index: 20;
+  translate: -50% 4px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0.5px rgb(31 37 54 / 0.14)) drop-shadow(0 6px 10px rgb(31 37 54 / 0.12));
+  transition:
+    opacity 0.2s var(--ease-out-soft),
+    translate 0.3s var(--ease-out-soft),
+    visibility 0s 0.3s;
+}
+.email-pop[data-open] {
+  translate: -50% 0;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* The resume walk (components/resume). The scene positions every block each
+   frame with a transform; sizes come from here and feed the path layout.
+
+   The text layer has two layouts. The walk (data-live, set once the scene is
+   up) lays the blocks along the path. The plain reading column is used until
+   then, and whenever the list view is chosen (data-list, set by the scene
+   under a cross-fade). */
+.resume-layer {
+  /* Where the plain column starts: clear of the controls, which stack on phones. */
+  --list-top: 8.5rem;
+  opacity: 0;
+  visibility: hidden;
+}
+@media (width >= 45rem) {
+  .resume-layer {
+    --list-top: 7.5rem;
+  }
+}
+.rw-block {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  will-change: transform, opacity;
+}
+/* Emphasis (--o, written by the scene) dims the content, not the block, so
+   the snow plate behind narrow-screen text keeps its strength. */
+.rw-block > * {
+  opacity: var(--o, 1);
+}
+/* Narrow screens hang the text right over the trail: lay it on a soft plate
+   of snow so the path and footprints never run through the words. (Bullets
+   are on placards of their own.) */
+@media (width < 45rem) {
+  .resume-layer[data-live]:not([data-list]) .rw-block:not(.rw-line) {
+    border-radius: 18px;
+    background: color-mix(in oklab, var(--color-ice) 82%, transparent);
+    box-shadow: 0 0 18px 14px color-mix(in oklab, var(--color-ice) 82%, transparent);
+  }
+}
+.rw-section {
+  width: max-content;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.rw-entry,
+.rw-line {
+  width: calc(100vw - 48px);
+}
+.rw-line {
+  padding-left: 1.5rem;
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.rw-mark {
+  position: absolute;
+  top: 0.42em;
+  left: 0.15rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  transition: transform 0.4s var(--ease-out-soft);
+}
+@media (width >= 45rem) {
+  .rw-section {
+    font-size: clamp(3.25rem, 5vw, 4.5rem);
+    text-align: right;
+  }
+  .rw-entry {
+    width: min(20rem, calc(50vw - 54px - 2.5rem));
+    text-align: right;
+  }
+  .rw-line {
+    width: min(28.5rem, calc(50vw - 54px - 2.5rem));
+    font-size: 16px;
+  }
+}
+
+/* Ice placards: on the walk each bullet sits on a small frosted slab, cut at
+   the corners like the buttons, resting on the snow. The one beside the
+   penguin lifts, its shadow spreading, with an orange edge. */
+@property --accent {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.resume-layer[data-live]:not([data-list]) .rw-line {
+  --cut: 8px;
+  --accent: 0;
+  isolation: isolate;
+  padding: 0.75rem 1.1rem 0.8rem 2.3rem;
+  filter: drop-shadow(0 1px 0.5px rgb(31 37 54 / 0.12)) drop-shadow(0 5px 7px rgb(31 37 54 / 0.07));
+  transition:
+    translate 0.55s var(--ease-out-soft),
+    filter 0.55s var(--ease-out-soft),
+    --accent 0.45s var(--ease-out-soft);
+}
+/* The rim: light on the upper left, a navy tint where the slab turns away. */
+.resume-layer[data-live]:not([data-list]) .rw-line::before,
+.resume-layer[data-live]:not([data-list]) .rw-line::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+  opacity: calc(0.62 + 0.38 * var(--o, 1));
+}
+.resume-layer[data-live]:not([data-list]) .rw-line::before {
+  inset: 0;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.95), rgb(31 37 54 / 0.2));
+}
+/* The face: frosted ice, brightest where the low sun catches it. */
+.resume-layer[data-live]:not([data-list]) .rw-line::after {
+  --cut: 7.6px;
+  inset: 1px;
+  background:
+    linear-gradient(90deg, rgb(238 150 42 / var(--accent)) 0 3px, transparent 3px),
+    linear-gradient(155deg, rgb(255 255 255 / 0.75) 0, rgb(255 255 255 / 0) 48%),
+    rgb(249 248 245 / 0.92);
+}
+/* Quieter, never faint: the words keep at least 4.5:1 on the slab. */
+.resume-layer[data-live]:not([data-list]) .rw-line > * {
+  opacity: calc(0.45 + 0.55 * var(--o, 1));
+}
+.resume-layer[data-live]:not([data-list]) .rw-mark {
+  top: calc(0.75rem + 0.45em);
+  left: 0.95rem;
+}
+.resume-layer[data-live]:not([data-list]) .rw-line[data-current] {
+  --accent: 1;
+  translate: 0 -3px;
+  filter: drop-shadow(0 2px 1px rgb(31 37 54 / 0.1)) drop-shadow(0 14px 16px rgb(31 37 54 / 0.13));
+}
+.rw-line[data-current] .rw-mark {
+  transform: scale(1.25);
+}
+
+/* The plain column: while the scene loads (or without WebGL), and the list
+   view, which keeps it through the fade home (the scene then hides the layer). */
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 1; /* over the poster and the penguin, under the controls */
+  padding: var(--list-top) 1.5rem 5rem;
+  background: var(--color-ice);
+}
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) .rw-block {
+  position: relative;
+  width: auto;
+  max-width: 36rem;
+  margin: 0 auto 1.1rem;
+  text-align: left;
+}
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) .rw-section {
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+  scroll-margin-top: calc(var(--list-top) - 0.5rem);
+}
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) .rw-entry {
+  margin-top: 1.75rem;
+}
+
+.rw-nav {
+  color: color-mix(in oklab, var(--color-navy-soft) 80%, transparent);
+  transition: color 0.3s var(--ease-out-soft);
+}
+.rw-nav:hover,
+.rw-nav[aria-current] {
+  color: var(--color-navy);
+}
+
+/* The Walk / List switch (ResumeHud): a frosted bed, a navy slab on the choice. */
+.chamfer-sm {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+}
+.rw-toggle-bed {
+  background:
+    linear-gradient(115deg, rgb(31 37 54 / 0.07) 50%, rgb(31 37 54 / 0.11) 50%),
+    color-mix(in oklab, var(--color-snow) 90%, transparent);
+}
+/* A diagonal crease, so the flat slab reads as two facets of one plane. */
+.crease-dark {
+  background: linear-gradient(115deg, #2a3146 50%, var(--color-navy) 50%);
+}

@@ -1,56 +1,50 @@
-![Website Screenshot](./public/project1.png "Website")
-
 # tylerrlin.github.io
 
-## Introduction
+Personal portfolio — a poster-style home screen with a low-poly 3D penguin, and
+a resume it walks you through.
 
-This repository contains the source code for my personal portofolio. Using Typescript and NextJS 13, it is designed to showcase my projects, skills, and experience.
+## Stack
 
-You can visit the live website at [https://tylerrlin.github.io](https://tylerrlin.github.io).
+- [Vite](https://vite.dev) + React + TypeScript
+- [Tailwind CSS v4](https://tailwindcss.com) (via `@tailwindcss/vite`)
+- [React Three Fiber](https://r3f.docs.pmnd.rs) + [three.js](https://threejs.org)
 
-## Features
+## Content
 
--   Modular [React](https://reactjs.org/) Components built with [TypeScript](https://www.typescriptlang.org/) using [Tailwind CSS](https://tailwindcss.com/) styling
--   Simple [PocketBase](https://pocketbase.io/) backend to store Contact Form submissions
--   [Framer Motion](https://www.framer.com/motion/) powered animations and gesture responses
--   Responsive design tailored for both mobile/desktop
+Name, role, email address and social links live in `src/content.ts`.
 
-## Deploy Locally
+The resume lives in [`src/resume.ts`](src/resume.ts). Edit the `resume` list
+there to change the walk; no other code changes needed. Sections appear in
+order, and each entry becomes a stop on the path, followed by one stop per
+bullet:
 
-## Prerequisites
-
-Before running your personal portfolio website locally, ensure you have the following:
-
--   Node.js installed
--   Git installed
-
-### Steps to Run Locally
-
-#### 1. Clone the Repository
-
-```bash
-git clone https://github.com/tylerrlin/tylerrlin.github.io.git
-cd tylerrlin.github.io
+```ts
+{
+  title: 'Experience',
+  entries: [
+    {
+      org: 'Company',
+      role: 'Job title',      // optional
+      dates: 'May 2024 – Sep 2024', // optional
+      location: 'Boston, MA',       // optional
+      bullets: ['One stop per bullet.'], // optional
+    },
+  ],
+},
 ```
 
-#### 2. Install Dependencies
+`npm run build` type-checks it, so a missing or misspelled field fails the
+build with an error pointing at it.
 
-```bash
+## Development
+
+```sh
 npm install
+npm run dev      # dev server
+npm run build    # type-check + production build to dist/
+npm run preview  # serve the production build locally
 ```
 
-#### 3. Start the Development Server
+## Deployment
 
-```bash
-npm run dev
-```
-
-Congratulations! Visit http://localhost:8080 in your browser to view your personal portfolio. To change the port, edit the package.json file.
-
----
-
-#### Making Changes
-
-Feel free to make changes to the portfolio code. The development server will automatically reload as you save changes.
-
----
+Pushes to `main` build and deploy to GitHub Pages via `.github/workflows/deploy.yml`.
