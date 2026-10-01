@@ -125,14 +125,16 @@ export function ResumeText() {
                   {entry.org}
                 </h3>
                 {entry.role && <p className="mt-1.5 text-[15px] font-medium leading-snug text-navy-soft">{entry.role}</p>}
-                {entry.dates && (
+                {(entry.dates || entry.location) && (
                   <p className="mt-2 font-mono text-[11px] tracking-[0.16em] text-ember uppercase">
-                    <time>{entry.dates}</time>
+                    {entry.dates && <time>{entry.dates}</time>}
+                    {entry.dates && entry.location && <span aria-hidden> · </span>}
+                    {entry.location}
                   </p>
                 )}
               </header>
               <ul>
-                {entry.bullets.map((b) => (
+                {entry.bullets?.map((b) => (
                   <li key={b} ref={block()} className="rw-block rw-line">
                     <Facet className="rw-mark" />
                     <span>{b}</span>

@@ -26,7 +26,8 @@ bullet:
       org: 'Company',
       role: 'Job title',      // optional
       dates: 'May 2024 – Sep 2024', // optional
-      bullets: ['One stop per bullet.'],
+      location: 'Boston, MA',       // optional
+      bullets: ['One stop per bullet.'], // optional
     },
   ],
 },
