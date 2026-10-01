@@ -253,15 +253,12 @@ function EmailButton() {
 export default function Links() {
   return (
     <nav aria-label="Links" className="flex items-center justify-center gap-3 min-[25rem]:gap-4 wide:justify-start">
-      <a
-        href="#resume"
+      <button
+        type="button"
         data-resume-link
-        onClick={(e) => {
-          e.preventDefault()
-          enterResume()
-        }}
+        onClick={enterResume}
         {...glance}
-        className="group block focus-visible:outline-offset-2"
+        className="group block cursor-pointer focus-visible:outline-offset-2"
       >
         {/* Chamfered corners, cut like one of the penguin's facets. */}
         <span className="chamfer flex h-12 items-center gap-3 bg-navy pr-4 pl-5 text-[15px] min-[25rem]:pr-5 min-[25rem]:pl-6 font-medium tracking-[0.01em] text-snow transition-colors duration-300 group-hover:bg-navy-soft">
@@ -276,7 +273,7 @@ export default function Links() {
             <polygon points="0.6,5 9,5 9,7 0.6,7" fill="var(--color-snow)" />
           </svg>
         </span>
-      </a>
+      </button>
 
       <span aria-hidden className="h-7 w-px bg-navy/20" />
 

@@ -205,8 +205,6 @@ export function setStops(stops: number[]) {
 
 // --- Entering and leaving --------------------------------------------------
 
-const HASH = '#resume'
-
 function lockScroll(on: boolean) {
   document.documentElement.style.overflow = on ? 'hidden' : ''
 }
@@ -221,23 +219,18 @@ function applyExit() {
   setMode('home')
 }
 
-/** From the Resume button: a history entry, so Back returns home. */
+/** From the Resume button: a history entry (same URL), so Back returns home. */
 export function enterResume() {
   if (mode === 'resume') return
-  history.pushState({ resume: true }, '', HASH)
+  history.pushState({ resume: true }, '')
   applyEnter()
 }
 
 /** From the Home control or Esc. */
 export function exitResume() {
   if (mode === 'home') return
-  if (history.state?.resume) {
-    history.back() // popstate finishes the exit
-  } else {
-    // Arrived by deep link: there is no home entry behind us to go back to.
-    history.replaceState(null, '', location.pathname + location.search)
-    applyExit()
-  }
+  if (history.state?.resume) history.back() // popstate finishes the exit
+  else applyExit()
 }
 
 let installed = false
@@ -245,10 +238,11 @@ export function installHistory() {
   if (installed) return
   installed = true
   window.addEventListener('popstate', () => {
-    if (location.hash === HASH) applyEnter()
+    if (history.state?.resume) applyEnter()
     else applyExit()
   })
-  if (location.hash === HASH) applyEnter()
+  // A reload always lands on the home page, even mid-resume.
+  if (history.state?.resume) history.replaceState(null, '')
 }
 
 /** The penguin's home yaw: a three-quarter turn toward the name. */

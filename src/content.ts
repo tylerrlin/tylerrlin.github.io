@@ -1,20 +1,23 @@
 // Site content lives here so details can change without touching layout.
 
 export const profile = {
-  name: 'Tyler Lin',
-  role: 'Software engineer',
-}
+    name: "Tyler Lin",
+    role: "Software engineer",
+};
 
-/** Shown and copied by the email button (Links.tsx), never a mailto link. */
-export const email = 'tylerrlin@gmail.com'
+export const email = "tylerrlin@gmail.com";
 
 export type SocialLink = {
-  label: string
-  href: string
-  icon: 'linkedin' | 'github'
-}
+    label: string;
+    href: string;
+    icon: "linkedin" | "github";
+};
 
 export const socials: SocialLink[] = [
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/tylerrlin/', icon: 'linkedin' },
-  { label: 'GitHub', href: 'https://github.com/tylerrlin', icon: 'github' },
-]
+    {
+        label: "LinkedIn",
+        href: "https://www.linkedin.com/in/tylerrlin/",
+        icon: "linkedin",
+    },
+    { label: "GitHub", href: "https://github.com/tylerrlin", icon: "github" },
+];

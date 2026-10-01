@@ -202,7 +202,7 @@ export default function Director() {
       }
       dom.hud.style.transition = 'none'
       if (resume) {
-        // Arrived on /#resume and read the plain column while the scene
+        // Entered the resume and read the plain column while the scene
         // loaded: land straight in the walk, rising out of the snow (in the
         // list view the column simply stays).
         s.raw = 1
