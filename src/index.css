@@ -141,6 +141,27 @@ body {
   fill: #5d6886;
 }
 
+/* The email box (Links.tsx): a chamfered slip of snow over the glyph. */
+.email-pop {
+  z-index: 20;
+  translate: -50% 4px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0.5px rgb(31 37 54 / 0.14)) drop-shadow(0 6px 10px rgb(31 37 54 / 0.12));
+  transition:
+    opacity 0.2s var(--ease-out-soft),
+    translate 0.3s var(--ease-out-soft),
+    visibility 0s 0.3s;
+}
+.email-pop[data-open] {
+  translate: -50% 0;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
 /* The resume walk (components/resume). The scene positions every block each
    frame with a transform; sizes come from here and feed the path layout.
 

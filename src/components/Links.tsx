@@ -1,12 +1,12 @@
-import type { ReactNode } from 'react'
-import { socials, type SocialLink } from '../content'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { email, socials, type SocialLink } from '../content'
 import { enterResume } from '../walk/state'
 import { lookAt } from '../attention'
 
 // Low-poly glyphs that match the penguin: flat facets in three navy tones, an
 // orange accent, ice where a cutout would be. Drawn on a 24 x 24 grid. Each
 // glyph lays a dark base under its facets so antialiased seams read as creases.
-const ICONS: Record<SocialLink['icon'], ReactNode> = {
+const ICONS: Record<SocialLink['icon'] | 'email', ReactNode> = {
   email: (
     <>
       <polygon className="fd" points="1.5,4 22.5,4 22.5,20 1.5,20" />
@@ -53,9 +53,193 @@ const ICONS: Record<SocialLink['icon'], ReactNode> = {
   ),
 }
 
+// Copied: a faceted check in green. Its facets hold 3.8:1 to 5.9:1 on the snow.
+const CHECK = (
+  <>
+    <polygon fill="#3a8a5a" points="2.5,12.5 6,9 10,12.5 10,19.5" />
+    <polygon fill="#2e7a4b" points="10,12.5 18,4.5 19.75,6.25 10,16" />
+    <polygon fill="#236b40" points="10,16 19.75,6.25 21.5,8 10,19.5" />
+  </>
+)
+
+/** Two faceted sheets, one over the other. */
+const COPY = (
+  <>
+    <polygon fill="currentColor" opacity="0.55" points="4,1 11,1 11,8 9.4,8 9.4,2.6 4,2.6" />
+    <polygon fill="currentColor" points="1,4 8,4 8,11 1,11" />
+  </>
+)
+
 const glance = {
   onMouseEnter: (e: { currentTarget: Element }) => lookAt(e.currentTarget),
   onFocus: (e: { currentTarget: Element }) => lookAt(e.currentTarget),
+}
+
+const COPIED_MS = 1600
+/** Keep the box this far inside the viewport. */
+const EDGE = 12
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // No async clipboard (insecure context, older browsers): the old way.
+    const back = document.activeElement as HTMLElement | null
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0'
+    document.body.append(ta)
+    ta.select()
+    let ok = false
+    try {
+      ok = document.execCommand('copy')
+    } catch {
+      // Nothing more to try: the address stays on show to copy by hand.
+    }
+    ta.remove()
+    back?.focus({ preventScroll: true })
+    return ok
+  }
+}
+
+/**
+ * The email glyph copies the address instead of opening a mail app. Hovering
+ * or focusing it shows the address in a small box with its own copy button;
+ * a tap (no hover on touch) copies and pins the box open until the next tap
+ * elsewhere. Whichever control copied turns to a check for a moment.
+ */
+function EmailButton() {
+  const root = useRef<HTMLLIElement>(null)
+  const box = useRef<HTMLDivElement>(null)
+  const pointer = useRef('')
+  // Esc'd while focus stays on the glyph: keep it shut until focus leaves.
+  const dismissed = useRef(false)
+  const timer = useRef(0)
+  const id = useId()
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const [pinned, setPinned] = useState(false)
+  const [copied, setCopied] = useState<'icon' | 'box' | null>(null)
+  const [shift, setShift] = useState(0)
+  const open = hovered || focused || pinned
+
+  const close = () => {
+    setHovered(false)
+    setFocused(false)
+    setPinned(false)
+  }
+
+  const copy = async (from: 'icon' | 'box') => {
+    if (pointer.current === 'touch') setPinned(true)
+    pointer.current = ''
+    if (!(await copyText(email))) return
+    setCopied(from)
+    clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setCopied(null), COPIED_MS)
+  }
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  // Centered over the glyph, nudged sideways to stay on screen.
+  useLayoutEffect(() => {
+    if (!open || !root.current || !box.current) return
+    const r = root.current.getBoundingClientRect()
+    const w = box.current.offsetWidth
+    const left = r.left + r.width / 2 - w / 2
+    const fit = Math.min(window.innerWidth - EDGE - w, Math.max(EDGE, left))
+    setShift(fit - left)
+  }, [open])
+
+  // Esc closes it, and so does a tap or click anywhere else.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      close()
+      if (root.current?.contains(document.activeElement)) {
+        dismissed.current = true
+        root.current.querySelector('button')?.focus()
+      }
+    }
+    const onDown = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) close()
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onDown)
+    }
+  }, [open])
+
+  return (
+    <li
+      ref={root}
+      className="relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={(e) => {
+        // Keyboard focus opens it; focus from a click or tap leaves that to hover and pinning.
+        if (e.target.matches(':focus-visible') && !dismissed.current) setFocused(true)
+      }}
+      onBlur={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget)) return
+        setFocused(false)
+        dismissed.current = false
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Copy email address"
+        aria-describedby={`${id}-address`}
+        onPointerDown={(e) => void (pointer.current = e.pointerType)}
+        onClick={() => copy('icon')}
+        {...glance}
+        className="facets group relative grid size-12 cursor-pointer place-items-center focus-visible:outline-offset-2"
+      >
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          className="relative z-10 size-7 transition-transform duration-300 ease-out-soft group-hover:-translate-y-[3px] group-focus-visible:-translate-y-[3px] md:size-[30px]"
+        >
+          {copied === 'icon' ? CHECK : ICONS.email}
+        </svg>
+        <span
+          aria-hidden
+          className="absolute bottom-[5px] h-[3px] w-5 scale-x-0 rounded-[50%] bg-navy/25 blur-[1.5px] transition-transform duration-300 ease-out-soft group-hover:scale-x-100 group-focus-visible:scale-x-100"
+        />
+      </button>
+
+      {/* The bottom padding bridges the gap to the glyph, so the pointer can
+          cross into the box without it closing. */}
+      <div
+        ref={box}
+        data-open={open || undefined}
+        className="email-pop absolute bottom-full pb-2"
+        style={{ left: `calc(50% + ${shift}px)` }}
+      >
+        <div className="chamfer flex items-center gap-1.5 bg-snow py-1 pr-1 pl-3.5">
+          <span id={`${id}-address`} className="font-mono text-[12.5px] tracking-[0.02em] whitespace-nowrap text-navy select-all">
+            {email}
+          </span>
+          <button
+            type="button"
+            aria-label="Copy"
+            onClick={() => copy('box')}
+            className="chamfer-sm grid size-8 shrink-0 cursor-pointer place-items-center text-navy-soft transition-colors duration-300 hover:bg-navy/8 hover:text-navy focus-visible:outline-offset-[-3px]"
+          >
+            <svg aria-hidden viewBox={copied === 'box' ? '0 0 24 24' : '0 0 12 12'} className="size-3.5">
+              {copied === 'box' ? CHECK : COPY}
+            </svg>
+          </button>
+        </div>
+      </div>
+      <span role="status" className="sr-only">
+        {copied ? 'Email address copied' : ''}
+      </span>
+    </li>
+  )
 }
 
 export default function Links() {
@@ -89,15 +273,16 @@ export default function Links() {
       <span aria-hidden className="h-7 w-px bg-navy/20" />
 
       <ul className="-mr-2.5 flex items-center">
+        <EmailButton />
         {socials.map(({ label, href, icon }) => {
-          const external = href.startsWith('http')
           return (
             <li key={label}>
               <a
                 href={href}
                 aria-label={label}
                 title={label}
-                {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                target="_blank"
+                rel="noopener noreferrer"
                 {...glance}
                 className="facets group relative grid size-12 place-items-center focus-visible:outline-offset-2"
               >

@@ -5,14 +5,16 @@ export const profile = {
   role: 'Software engineer',
 }
 
+/** Shown and copied by the email button (Links.tsx), never a mailto link. */
+export const email = 'tylerrlin@gmail.com'
+
 export type SocialLink = {
   label: string
   href: string
-  icon: 'email' | 'linkedin' | 'github'
+  icon: 'linkedin' | 'github'
 }
 
 export const socials: SocialLink[] = [
-  { label: 'Email', href: 'mailto:tylerrlin@gmail.com', icon: 'email' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/tylerrlin/', icon: 'linkedin' },
   { label: 'GitHub', href: 'https://github.com/tylerrlin', icon: 'github' },
 ]

@@ -11,7 +11,7 @@ a resume it walks you through.
 
 ## Content
 
-Name, role and social links live in `src/content.ts`.
+Name, role, email address and social links live in `src/content.ts`.
 
 The resume lives in [`src/resume.ts`](src/resume.ts). Edit the `resume` list
 there to change the walk; no other code changes needed. Sections appear in
