@@ -14,7 +14,7 @@ import {
   pathSlope,
   pathX,
   sideOf,
-  stickyRange,
+  stickyEnd,
   type Bird,
 } from '../../walk/path'
 
@@ -22,9 +22,10 @@ import {
 // home framing and the bird's-eye walk, walks the penguin toward its target,
 // points the camera, and projects the resume text and the snowfield to match.
 
+/** The `wide` variant in index.css. One query, so CSS and the camera agree. */
 const WIDE_QUERY = '(width >= 48rem) and (min-aspect-ratio: 4/5)'
 const HOME_FOV = 28
-/** The poster composition never spreads wider than this (App.tsx, --frame). */
+/** The poster composition never spreads wider than this (index.css, --pad-x). */
 const FRAME = 1680
 
 // Where the penguin stands at home, in shares of its stage box (the hero on
@@ -61,34 +62,36 @@ type Pose = { oy: number; pitch: number; dist: number; tanHalf: number; cx: numb
 
 type Rect = { left: number; top: number; width: number; height: number }
 
-function homePose(canvas: Rect, stage: Rect, wide: boolean): Pose {
+const HOME_TAN = Math.tan((HOME_FOV * Math.PI) / 360)
+
+// Both poses are written into `out`: they are rebuilt every frame.
+function homePose(canvas: Rect, stage: Rect, wide: boolean, out: Pose) {
   const stand = wide ? STAND.wide : STAND.narrow
   const frame = Math.min(stage.width, FRAME)
   const px = Math.min(stand.height * stage.height, stand.maxW * frame)
   const viewH = (PENGUIN_HEIGHT * stage.height) / px // world units across the stage height
-  const tan = Math.tan((HOME_FOV * Math.PI) / 360)
-  const dist = viewH / (2 * tan)
-  return {
-    // Nearly level, so the penguin keeps a straight-on, portrait view.
-    oy: (stand.feet - 0.5) * viewH,
-    pitch: Math.atan(0.07),
-    dist: dist * Math.hypot(1, 0.07),
-    tanHalf: (tan * canvas.height) / stage.height,
-    cx: stage.left - canvas.left + (stage.width - frame) / 2 + stand.x * frame,
-    cy: stage.top - canvas.top + stage.height / 2,
-  }
+  // Nearly level, so the penguin keeps a straight-on, portrait view.
+  out.oy = (stand.feet - 0.5) * viewH
+  out.pitch = Math.atan(0.07)
+  out.dist = (viewH / (2 * HOME_TAN)) * Math.hypot(1, 0.07)
+  out.tanHalf = (HOME_TAN * canvas.height) / stage.height
+  out.cx = stage.left - canvas.left + (stage.width - frame) / 2 + stand.x * frame
+  out.cy = stage.top - canvas.top + stage.height / 2
 }
 
-function birdPose(canvas: Rect, bird: Bird): Pose {
-  return {
-    oy: 0.45,
-    pitch: bird.pitch,
-    dist: bird.dist,
-    tanHalf: (bird.tanHalf * canvas.height) / bird.vh,
-    cx: bird.vw / 2 - canvas.left,
-    cy: bird.centerY * bird.vh - canvas.top,
-  }
+function birdPose(canvas: Rect, bird: Bird, out: Pose) {
+  out.oy = 0.45
+  out.pitch = bird.pitch
+  out.dist = bird.dist
+  out.tanHalf = (bird.tanHalf * canvas.height) / bird.vh
+  out.cx = bird.vw / 2 - canvas.left
+  out.cy = bird.centerY * bird.vh - canvas.top
 }
+
+const newPose = (): Pose => ({ oy: 0, pitch: 0, dist: 1, tanHalf: 0.25, cx: 0, cy: 0 })
+
+/** Where a pose puts the horizon, canvas px from the top. */
+const horizonY = (p: Pose, canvasH: number) => p.cy - (canvasH / (2 * p.tanHalf)) * Math.tan(p.pitch)
 
 const smooth = (a: number, b: number, x: number) => {
   const t = MathUtils.clamp((x - a) / (b - a), 0, 1)
@@ -111,17 +114,30 @@ export default function Director() {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const gl = useThree((s) => s.gl)
 
-  const s = useMemo(
-    () => ({
+  const s = useMemo(() => {
+    const canvasRect: Rect = { left: 0, top: 0, width: 1, height: 1 }
+    const v = new Vector3()
+    /** World point to viewport px through the scene camera; false when behind it. */
+    const project = (x: number, y: number, z: number, out: ScreenPoint) => {
+      v.set(x, y, z).applyMatrix4(camera.matrixWorldInverse)
+      if (v.z > -camera.near) return false
+      v.applyMatrix4(camera.projectionMatrix)
+      out.x = ((v.x + 1) / 2) * canvasRect.width + canvasRect.left
+      out.y = ((1 - v.y) / 2) * canvasRect.height + canvasRect.top
+      return true
+    }
+    return {
       raw: 0, // linear flight progress, 0 home .. 1 walk
       vel: 0,
       wasResume: false,
-      v: new Vector3(),
+      project,
       anchor: { x: 0, y: 0 } as ScreenPoint,
       at: { x: 0, y: 0 } as ScreenPoint,
       east: { x: 0, y: 0 } as ScreenPoint,
-      pose: { oy: 0, pitch: 0, dist: 1, tanHalf: 0.25, cx: 0, cy: 0 } as Pose,
-      canvasRect: { left: 0, top: 0, width: 1, height: 1 } as Rect,
+      pose: newPose(),
+      home: newPose(),
+      away: newPose(),
+      canvasRect,
       prints: Array.from({ length: MAX_PRINTS }, () => ({ x: 0, z: 0, heading: 0, side: 1 }) as Print),
       printCount: 0,
       ridges: makeRidges(-12, 40),
@@ -149,10 +165,11 @@ export default function Director() {
       hudO: NaN,
       section: -1,
       progress: NaN,
-      groundKey: '',
-    }),
-    [],
-  )
+      // What the snowfield was last drawn from, so a still frame redraws nothing.
+      groundKey: [NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+      groundNext: [0, 0, 0, 0, 0, 0, 0],
+    }
+  }, [camera])
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.1)
@@ -161,6 +178,8 @@ export default function Director() {
     const bird = currentBird()
     const stops = walk.stops
     const lastStop = stops[stops.length - 1]
+    // How far along the path the bird's-eye view reaches from the penguin.
+    const reach = (0.75 * bird.vh) / bird.alongPx + 2
 
     // --- Reads first (layout), then everything else is writes. ------------
     const cr = gl.domElement.getBoundingClientRect()
@@ -298,9 +317,9 @@ export default function Director() {
     walker.heading = reduce ? want : dampAngle(walker.heading, want, speed > 0.15 ? 9 : 4.5, dt)
 
     // --- Camera ----------------------------------------------------------------
-    const home = homePose(s.canvasRect, stageRect, wideQuery?.matches ?? true)
-    const away = birdPose(s.canvasRect, bird)
-    const pose = s.pose
+    const { home, away, pose } = s
+    homePose(s.canvasRect, stageRect, wideQuery?.matches ?? true, home)
+    birdPose(s.canvasRect, bird, away)
     pose.pitch = MathUtils.lerp(home.pitch, away.pitch, tilt)
     pose.dist = logLerp(home.dist, away.dist, zoom)
     pose.tanHalf = logLerp(home.tanHalf, away.tanHalf, zoom)
@@ -323,8 +342,7 @@ export default function Director() {
     // --- The home layers tilt away ------------------------------------------
     // Shift the sky and the home type by how far the horizon has moved, so
     // they slide off as if the camera tipped down past them.
-    const horizon = (p: Pose) => p.cy - (H / (2 * p.tanHalf)) * Math.tan(p.pitch)
-    const shift = Math.max(-1.6 * bird.vh, horizon(pose) - horizon(home))
+    const shift = Math.max(-1.6 * bird.vh, horizonY(pose, H) - horizonY(home, H))
     const skyShift = Math.round(shift * 10) / 10
     if (skyShift !== s.skyShift) {
       s.skyShift = skyShift
@@ -340,15 +358,7 @@ export default function Director() {
     }
 
     // --- Project the resume ----------------------------------------------------
-    const v = s.v
-    const project = (x: number, y: number, z: number, out: ScreenPoint) => {
-      v.set(x, y, z).applyMatrix4(camera.matrixWorldInverse)
-      if (v.z > -camera.near) return false
-      v.applyMatrix4(camera.projectionMatrix)
-      out.x = ((v.x + 1) / 2) * W + s.canvasRect.left
-      out.y = ((1 - v.y) / 2) * H + s.canvasRect.top
-      return true
-    }
+    const project = s.project
 
     // In late on the way in; out early on the way home, before the penguin
     // grows back over the text.
@@ -398,7 +408,8 @@ export default function Director() {
     const shown = 1 - smooth(0, 1, s.swap)
     const textO = Math.round(s.textO * shown * 1000) / 1000
     for (let i = 0; i < stations.length; i++) {
-      const [a, b] = bird.wide ? stickyRange(i, stops) : [stops[i], stops[i]]
+      const a = stops[i]
+      const b = bird.wide ? stops[stickyEnd[i]] : a
       const off = pos < a ? a - pos : pos > b ? pos - b : 0
       s.emphasis[i] = 1 - smooth(0.12, 1.5, off)
     }
@@ -425,8 +436,7 @@ export default function Director() {
         const el = dom.blocks[i]
         if (!el) continue
         const { w, h } = walk.sizes[i]
-        const [a, b] = bird.wide ? stickyRange(i, stops) : [stops[i], stops[i]]
-        const za = MathUtils.clamp(pos, a, b)
+        const za = bird.wide ? MathUtils.clamp(pos, stops[i], stops[stickyEnd[i]]) : stops[i]
         // Culled blocks go transparent, never visibility: hidden, so screen
         // readers keep the whole resume.
         if (!project(pathX(za, bird.sway), 0, za, anchor)) {
@@ -448,7 +458,7 @@ export default function Director() {
         y = Math.round(y)
         // Cull off-screen blocks, and far ones that would bunch up near the
         // horizon while the camera is still tipping over.
-        const near = Math.abs(za - pos) < (0.75 * bird.vh) / bird.alongPx + 2
+        const near = Math.abs(za - pos) < reach
         const visible = near && y < bird.vh + 40 && y + h > -40
         if (visible !== s.blockVis[i]) {
           s.blockVis[i] = visible
@@ -519,9 +529,23 @@ export default function Director() {
         resized = true
       }
       const alpha = smooth(0.18, 0.85, blend)
-      const key = `${alpha.toFixed(3)}|${pos.toFixed(4)}|${tilt.toFixed(4)}|${zoom.toFixed(4)}|${s.printCount}|${walk.layoutVersion}|${here}`
-      if (key !== s.groundKey || resized) {
-        s.groundKey = key
+      // Redraw only when something drawn has changed.
+      const next = s.groundNext
+      next[0] = Math.round(alpha * 1e3)
+      next[1] = Math.round(pos * 1e4)
+      next[2] = Math.round(tilt * 1e4)
+      next[3] = Math.round(zoom * 1e4)
+      next[4] = s.printCount
+      next[5] = walk.layoutVersion
+      next[6] = here
+      let changed = resized
+      for (let i = 0; i < next.length; i++) {
+        if (next[i] !== s.groundKey[i]) {
+          s.groundKey[i] = next[i]
+          changed = true
+        }
+      }
+      if (changed) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         ctx.clearRect(0, 0, bird.vw, bird.vh)
         if (alpha > 0) {
@@ -540,7 +564,7 @@ export default function Director() {
             unit: Math.max(1, Math.hypot(p1.x - p0.x, p1.y - p0.y)),
             pos,
             sway: bird.sway,
-            reach: (0.75 * bird.vh) / bird.alongPx + 2,
+            reach,
             stops,
             emphasis: s.emphasis,
             prints: s.prints,

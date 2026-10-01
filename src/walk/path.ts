@@ -109,9 +109,8 @@ export function layoutStops(heights: number[], bird: Bird): number[] {
       // the next block on its side must clear it there, not where it began.
       for (let j = i - 1; j >= 0; j--) {
         if (sideOf(stations[j]) !== sideOf(stations[i])) continue
-        const end = stickyEnd(j)
         const clear = (heights[j] + b) / 2 + (sectionBreak ? 92 : 40)
-        zi = Math.max(zi, z[end] + (clear / bird.alongPx) * PERSPECTIVE_PAD)
+        zi = Math.max(zi, z[stickyEnd[j]] + (clear / bird.alongPx) * PERSPECTIVE_PAD)
         break
       }
     }
@@ -121,22 +120,17 @@ export function layoutStops(heights: number[], bird: Bird): number[] {
 }
 
 /**
- * The z range over which a block stays pinned beside the penguin (wide only):
- * an entry's header holds while its bullets go by.
+ * The last stop each block stays pinned through, beside the penguin (wide
+ * only): an entry's header holds while its bullets go by. Other blocks pin
+ * through their own stop only.
  */
-export function stickyRange(i: number, stops: number[]): [number, number] {
-  return [stops[i], stops[stickyEnd(i)]]
-}
-
-/** The last stop a block stays pinned through (itself, if it doesn't pin). */
-function stickyEnd(i: number) {
-  const s = stations[i]
+export const stickyEnd: number[] = stations.map((s, i) => {
   let end = i
   if (s.kind === 'entry') {
     while (end + 1 < stations.length && stations[end + 1].kind === 'line' && stations[end + 1].entry === s.entry) end++
   }
   return end
-}
+})
 
 /** Index of the stop nearest to z. */
 export function nearestStop(z: number, stops: number[]) {

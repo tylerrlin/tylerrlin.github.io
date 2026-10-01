@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 
 // Sparse, slow snowfall on a 2D canvas. Cheap: a few dozen dots, no allocation
-// per frame, paused while the tab is hidden, and a still frame under reduced motion.
+// per frame, paused while the tab is hidden or the sky is out of view (the
+// resume walk tilts it off screen), and a still frame under reduced motion.
 
 type Flake = { x: number; y: number; r: number; vy: number; sway: number; phase: number; a: number }
 
@@ -20,6 +21,7 @@ export default function Snow() {
     let ground = 0 // y where flakes have settled into the snowfield
     let raf = 0
     let last = performance.now()
+    let inView = true
 
     const spawn = (y?: number): Flake => {
       const depth = Math.random() // 0 = far, 1 = near
@@ -76,6 +78,7 @@ export default function Snow() {
 
     const start = () => {
       cancelAnimationFrame(raf)
+      if (!inView) return
       if (reduce.matches) {
         draw(0)
         return
@@ -90,21 +93,21 @@ export default function Snow() {
       if (reduce.matches) draw(0)
     })
     ro.observe(canvas)
+    const io = new IntersectionObserver(([e]) => {
+      inView = e.isIntersecting
+      start()
+    })
+    io.observe(canvas)
     resize()
     start()
     reduce.addEventListener('change', start)
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
+      io.disconnect()
       reduce.removeEventListener('change', start)
     }
   }, [])
 
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden
-      className="pointer-events-none absolute inset-0 size-full"
-    />
-  )
+  return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 size-full" />
 }

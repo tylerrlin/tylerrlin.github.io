@@ -225,6 +225,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       home: { yaw: 0, pitch: 0.02, roll: 0 } as Gaze,
       gaze: { yaw: 0, pitch: 0.02, roll: 0 } as Gaze,
       target: { yaw: 0, pitch: 0.02, roll: 0 } as Gaze,
+      look: { yaw: 0, pitch: 0, roll: 0 } as Gaze, // scratch for gazeToward
       nextChange: 1.5,
       seen: attention.version,
       following: false,
@@ -243,28 +244,28 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     [],
   )
 
-  // Turn a viewport point into a head gaze in the penguin's frame.
-  function gazeToward(x: number, y: number): Gaze | null {
-    if (!outer.current) return null
+  // Turn a viewport point into a head gaze in the penguin's frame, written
+  // into `out` (it runs every frame while following the cursor).
+  function gazeToward(x: number, y: number, out: Gaze): boolean {
+    if (!outer.current) return false
     const rect = gl.domElement.getBoundingClientRect()
-    if (!rect.width || !rect.height) return null
+    if (!rect.width || !rect.height) return false
     state.ndc.set(
       ((x - rect.left) / rect.width) * 2 - 1,
       -((y - rect.top) / rect.height) * 2 + 1,
     )
     state.ray.setFromCamera(state.ndc, camera)
-    if (!state.ray.ray.intersectPlane(state.plane, state.hit)) return null
+    if (!state.ray.ray.intersectPlane(state.plane, state.hit)) return false
     outer.current.updateWorldMatrix(true, false)
     state.head.copy(HEAD_POINT).applyMatrix4(outer.current.matrixWorld)
     const dir = state.hit.sub(state.head)
     dir.applyQuaternion(state.q.setFromRotationMatrix(outer.current.matrixWorld).invert())
     const yaw = Math.atan2(dir.x, dir.z)
     const pitch = Math.atan2(-dir.y, Math.hypot(dir.x, dir.z))
-    return {
-      yaw: MathUtils.clamp(yaw, FOCUS_YAW.left, FOCUS_YAW.right),
-      pitch: MathUtils.clamp(pitch, FOCUS_PITCH.up, FOCUS_PITCH.down),
-      roll: MathUtils.clamp(-yaw * 0.08, -ROLL, ROLL),
-    }
+    out.yaw = MathUtils.clamp(yaw, FOCUS_YAW.left, FOCUS_YAW.right)
+    out.pitch = MathUtils.clamp(pitch, FOCUS_PITCH.up, FOCUS_PITCH.down)
+    out.roll = MathUtils.clamp(-yaw * 0.08, -ROLL, ROLL)
+    return true
   }
 
   useFrame(({ clock }, delta) => {
@@ -298,9 +299,9 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     } else if (attention.version !== state.seen) {
       // A link was hovered or focused: look at it and hold a moment.
       state.seen = attention.version
-      const focus = gazeToward(attention.x, attention.y)
-      if (focus) {
-        state.target = focus
+      const focus = state.look
+      if (gazeToward(attention.x, attention.y, focus)) {
+        state.target = { ...focus }
         state.home = { yaw: focus.yaw * 0.5, pitch: focus.pitch * 0.5, roll: 0 }
         state.focusUntil = t + FOLLOW.linkHold
         state.nextChange = state.focusUntil
@@ -310,10 +311,13 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       // A moving cursor takes over shortly after a focus glance ends, or after
       // an idle glance has held for a beat; otherwise keep idling.
       const p = t > state.focusUntil ? currentPointer(performance.now()) : null
-      const follow = p && gazeToward(p.x, p.y)
+      const follow = p ? gazeToward(p.x, p.y, state.look) : false
       if (follow && (state.following || t > state.nextChange || t - state.glanceAt > FOLLOW.interrupt)) {
         // Follow at a little less than the full angle: attentive, not fixated.
-        state.target = { yaw: follow.yaw * 0.8, pitch: follow.pitch * 0.7, roll: follow.roll * 0.6 }
+        const { look, target } = state
+        target.yaw = look.yaw * 0.8
+        target.pitch = look.pitch * 0.7
+        target.roll = look.roll * 0.6
         state.following = true
         speed = FOLLOW.speed
       } else if (!follow && state.following) {
