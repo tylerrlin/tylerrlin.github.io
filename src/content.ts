@@ -3,7 +3,6 @@
 export const profile = {
   name: 'Tyler Lin',
   role: 'Software engineer',
-  resume: '/resume.pdf',
 }
 
 export type SocialLink = {

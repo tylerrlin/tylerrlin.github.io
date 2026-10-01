@@ -1,4 +1,4 @@
-// Resume content, transcribed verbatim from public/resume.pdf. Words here are
+// Resume content, transcribed verbatim from Tyler's resume. Words here are
 // Tyler's; the walk (components/resume) only lays them out along a path.
 
 export type ResumeEntry = {

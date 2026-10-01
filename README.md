@@ -10,8 +10,8 @@ Personal portfolio — minimalist game-menu home screen with a low-poly 3D pengu
 
 ## Content
 
-Name, role, resume path and social links live in `src/content.ts`.
-The resume itself is `public/resume.pdf`.
+Name, role and social links live in `src/content.ts`. The resume text lives
+in `src/resume.ts`; the resume walk lays it out along a path in the snow.
 
 ## Development
 
