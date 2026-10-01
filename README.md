@@ -12,30 +12,27 @@ Personal portfolio — minimalist game-menu home screen with a low-poly 3D pengu
 
 Name, role and social links live in `src/content.ts`.
 
-The resume lives in [`resume.json`](resume.json) at the repo root. Edit it to
-change the walk; no code changes needed. Sections appear in file order, and each
-entry becomes a stop on the path, followed by one stop per bullet:
+The resume lives in [`src/resume.ts`](src/resume.ts). Edit the `resume` list
+there to change the walk; no other code changes needed. Sections appear in
+order, and each entry becomes a stop on the path, followed by one stop per
+bullet:
 
-```json
+```ts
 {
-  "sections": [
+  title: 'Experience',
+  entries: [
     {
-      "title": "Experience",
-      "entries": [
-        {
-          "org": "Company",
-          "role": "Job title (optional)",
-          "dates": "May 2024 – Sep 2024",
-          "bullets": ["One stop per bullet."]
-        }
-      ]
-    }
-  ]
-}
+      org: 'Company',
+      role: 'Job title',      // optional
+      dates: 'May 2024 – Sep 2024', // optional
+      bullets: ['One stop per bullet.'],
+    },
+  ],
+},
 ```
 
-`npm run build` type-checks the file, so a missing or misspelled field fails
-the build with an error pointing at it.
+`npm run build` type-checks it, so a missing or misspelled field fails the
+build with an error pointing at it.
 
 ## Development
 
