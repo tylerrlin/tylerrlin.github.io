@@ -206,6 +206,9 @@ export default function Director() {
         // loaded: land straight in the walk, rising out of the snow (in the
         // list view the column simply stays).
         s.raw = 1
+        // Already at the top, and the reader may have scrolled the column:
+        // this is not a fresh entry.
+        s.wasResume = true
         if (!s.list) {
           s.veil = 1
           s.veilPhase = 2
@@ -215,7 +218,22 @@ export default function Director() {
 
     // --- Flight between home and the walk ---------------------------------
     const goal = resume ? 1 : 0
-    if (resume && !s.wasResume) s.printCount = 0 // a fresh trail each visit
+    if (resume && !s.wasResume) {
+      // Every visit starts at the top: a fresh trail, the first stop, the
+      // list scrolled up. From home the jump is unseen (the camera frames the
+      // penguin wherever it stands, and nothing else is drawn yet); turned
+      // back late in the flight home, it walks there instead.
+      s.printCount = 0
+      walk.drive = 0
+      walk.target = stops[0]
+      if (easeInOut(s.raw) <= 0.18) {
+        walk.pos = stops[0]
+        s.vel = 0
+        walker.x = pathX(stops[0], bird.sway)
+        walker.z = stops[0]
+      }
+      if (dom.textLayer) dom.textLayer.scrollTop = 0
+    }
     s.wasResume = resume
     if (!resume) walk.target = walk.pos
     if (reduce) {
