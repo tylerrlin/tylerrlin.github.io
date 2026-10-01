@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei'
+import { useFrame, useLoader, useThree } from '@react-three/fiber'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {
   Euler,
   Group,
@@ -97,7 +97,7 @@ const reducedMotionQuery =
   typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null
 
 export default function Penguin({ onReady }: { onReady?: () => void }) {
-  const { scene } = useGLTF(MODEL_URL)
+  const { scene } = useLoader(GLTFLoader, MODEL_URL)
   const outer = useRef<Group>(null)
   const body = useRef<Group>(null)
   const camera = useThree((s) => s.camera)
@@ -370,4 +370,4 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
   )
 }
 
-useGLTF.preload(MODEL_URL)
+useLoader.preload(GLTFLoader, MODEL_URL)
