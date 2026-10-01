@@ -31,7 +31,7 @@ export default function App() {
         </h1>
       </div>
 
-      <div className="rise-in relative px-6 pt-[calc(var(--feet)+clamp(1.5rem,4.5svh,3rem))] pb-14 text-center [animation-delay:120ms] wide:absolute wide:inset-x-0 wide:top-[calc(var(--horizon)+clamp(1.75rem,8svh,4.5rem))] wide:p-0 wide:px-(--pad-x) wide:text-left">
+      <div className="rise-in relative px-6 pt-[calc(var(--feet)+clamp(2.75rem,8svh,4.5rem))] pb-14 text-center [animation-delay:120ms] wide:absolute wide:inset-x-0 wide:top-[calc(var(--horizon)+clamp(1.75rem,8svh,4.5rem))] wide:p-0 wide:px-(--pad-x) wide:text-left">
         <Links />
       </div>
     </main>

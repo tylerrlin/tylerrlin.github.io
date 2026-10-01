@@ -34,7 +34,7 @@
   --stage: clamp(12rem, 54svh, 36rem);
   /* Center the whole stack (name, penguin, then the links row, about
      6rem) when there is room; short screens keep a fixed top margin. */
-  --stack: calc(1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.82 + 6rem);
+  --stack: calc(1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.82 + 7.5rem);
   --name-top: max(clamp(1.75rem, 6svh, 4.5rem), (100svh - var(--stack)) * 0.5);
   --horizon: calc(var(--name-top) + 1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.68);
   --stage-top: calc(var(--horizon) - var(--stage) * 0.8);
