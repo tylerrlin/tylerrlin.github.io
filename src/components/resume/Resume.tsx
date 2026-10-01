@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { resume, stations } from '../../resume'
 import { layoutStops } from '../../walk/path'
 import {
@@ -7,9 +15,9 @@ import {
   exitResume,
   getMode,
   getView,
-  inColumn,
   goToSection,
   goToStop,
+  inColumn,
   leap,
   nudge,
   setStops,
@@ -58,7 +66,6 @@ function Facet({ className = '' }: { className?: string }) {
 
 export function ResumeText() {
   const active = useResumeMode()
-  const layer = useRef<HTMLDivElement>(null)
 
   // Measure every block and lay the stops out to fit them. Text reflows with
   // the viewport and when the web fonts arrive, so watch the blocks' sizes.
@@ -98,10 +105,7 @@ export function ResumeText() {
 
   return (
     <div
-      ref={(el) => {
-        layer.current = el
-        dom.textLayer = el
-      }}
+      ref={(el) => void (dom.textLayer = el)}
       id="resume"
       role="region"
       aria-label="Resume"
@@ -197,13 +201,12 @@ function ViewToggle() {
 
   const onKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     const n = VIEWS.length
-    const to =
-      e.key === 'ArrowRight' || e.key === 'ArrowDown' ? (index + 1) % n
-      : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? (index + n - 1) % n
-      : e.key === 'Home' ? 0
-      : e.key === 'End' ? n - 1
-      : -1
-    if (to < 0) return
+    let to: number
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = (index + 1) % n
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = (index + n - 1) % n
+    else if (e.key === 'Home') to = 0
+    else if (e.key === 'End') to = n - 1
+    else return
     // Arrows here change the layout; they must not also walk the penguin.
     e.preventDefault()
     e.stopPropagation()
@@ -268,7 +271,6 @@ export function ResumeHud() {
   // along the path; the scene walks the penguin there.
   useEffect(() => {
     if (!active) return
-    const bird = () => currentBird()
     const retire = () => setHinted(true)
 
     let wheelDir = 0 // direction of the current wheel gesture
@@ -282,10 +284,10 @@ export function ResumeHud() {
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || !live()) return // pinch zoom, or the plain column
       e.preventDefault()
-      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? bird().vh : 1
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? currentBird().vh : 1
       const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX
       if (dy) wheelDir = Math.sign(dy)
-      nudge((dy * unit) / bird().alongPx)
+      nudge((dy * unit) / currentBird().alongPx)
       clearTimeout(wheelTimer)
       wheelTimer = window.setTimeout(() => {
         settleAhead(wheelDir)
@@ -309,15 +311,17 @@ export function ResumeHud() {
       touch.y = y
       touch.t = e.timeStamp
       if (dy) touch.dir = Math.sign(dy)
-      nudge(dy / bird().alongPx)
+      nudge(dy / currentBird().alongPx)
       retire()
     }
     // Clicking through: a click on a heading or bullet walks there; a click on
     // the open snow steps along the path toward it (below the penguin goes on,
     // above goes back). Controls keep their own clicks.
+    // The scene culls a block by setting its opacity to 0 inline, so that is
+    // all there is to check: no computed style on every pointer move.
     const blockAt = (x: number, y: number) =>
       dom.blocks.findIndex((el) => {
-        if (!el || Number(getComputedStyle(el).opacity) < 0.05) return false
+        if (!el || el.style.opacity === '0') return false
         const r = el.getBoundingClientRect()
         return x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8
       })
@@ -329,15 +333,17 @@ export function ResumeHud() {
       else step(e.clientY > window.innerHeight / 2 ? 1 : -1)
       retire()
     }
+    let cursor = ''
     const onPointerMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
-      document.body.style.cursor = live() && blockAt(e.clientX, e.clientY) >= 0 ? 'pointer' : ''
+      const next = live() && blockAt(e.clientX, e.clientY) >= 0 ? 'pointer' : ''
+      if (next !== cursor) document.body.style.cursor = cursor = next
     }
 
     const onTouchEnd = () => {
       if (!touch) return
       // A flick carries on a little before settling.
-      nudge((touch.vy * 180) / bird().alongPx)
+      nudge((touch.vy * 180) / currentBird().alongPx)
       settleAhead(touch.dir)
       touch = null
     }
@@ -392,11 +398,6 @@ export function ResumeHud() {
       }
     }
 
-    window.addEventListener('wheel', onWheel, { passive: false })
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchmove', onTouchMove, { passive: false })
-    window.addEventListener('touchend', onTouchEnd)
-    window.addEventListener('touchcancel', onTouchEnd)
     const release = () => {
       clearTimeout(holdTimer)
       heldKey = ''
@@ -406,25 +407,23 @@ export function ResumeHud() {
       if (e.key === heldKey) release()
     }
 
-    window.addEventListener('keydown', onKey)
-    window.addEventListener('click', onClick)
-    window.addEventListener('pointermove', onPointerMove, { passive: true })
-    window.addEventListener('keyup', onKeyUp)
-    window.addEventListener('blur', release)
+    const off = new AbortController()
+    const signal = off.signal
+    window.addEventListener('wheel', onWheel, { passive: false, signal })
+    window.addEventListener('touchstart', onTouchStart, { passive: true, signal })
+    window.addEventListener('touchmove', onTouchMove, { passive: false, signal })
+    window.addEventListener('touchend', onTouchEnd, { signal })
+    window.addEventListener('touchcancel', onTouchEnd, { signal })
+    window.addEventListener('keydown', onKey, { signal })
+    window.addEventListener('keyup', onKeyUp, { signal })
+    window.addEventListener('blur', release, { signal })
+    window.addEventListener('click', onClick, { signal })
+    window.addEventListener('pointermove', onPointerMove, { passive: true, signal })
     return () => {
+      off.abort()
       release()
-      window.removeEventListener('keyup', onKeyUp)
-      window.removeEventListener('blur', release)
       clearTimeout(wheelTimer)
-      window.removeEventListener('wheel', onWheel)
-      window.removeEventListener('click', onClick)
-      window.removeEventListener('pointermove', onPointerMove)
       document.body.style.cursor = ''
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('touchend', onTouchEnd)
-      window.removeEventListener('touchcancel', onTouchEnd)
-      window.removeEventListener('keydown', onKey)
     }
   }, [active])
 
@@ -433,7 +432,7 @@ export function ResumeHud() {
       ref={(el) => void (dom.hud = el)}
       inert={!active}
       data-active={active || undefined}
-      className="resume-hud pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
+      className="pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
     >
       {/* Top: a soft snow fade so text slides under the controls. */}
       <div aria-hidden className="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-ice from-55% wide-walk:h-32 wide-walk:from-40% via-ice/85 to-transparent" />
@@ -471,12 +470,14 @@ export function ResumeHud() {
                     type="button"
                     data-section={i}
                     onClick={() => {
-                      if (!inColumn()) goToSection(i)
-                      else
+                      if (!inColumn()) {
+                        goToSection(i)
+                      } else {
                         document.getElementById(`resume-${s.id}`)?.scrollIntoView({
                           block: 'start',
                           behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
                         })
+                      }
                       setHinted(true)
                     }}
                     className="rw-nav px-1.5 py-2 font-mono text-[10px] tracking-[0.14em] uppercase min-[25rem]:text-[11px] wide-walk:px-2.5"
@@ -499,8 +500,8 @@ export function ResumeHud() {
         className="absolute inset-x-0 bottom-5 flex justify-center transition-opacity duration-500 data-hidden:opacity-0"
       >
         <span className="rounded-full bg-snow/95 px-3.5 py-1.5 font-mono text-[11px] tracking-[0.16em] text-navy-soft uppercase shadow-[0_0_14px_6px_var(--color-snow)]">
-        <span className="coarse:hidden">Click, scroll or use ↑ ↓ to walk · Esc for home</span>
-        <span className="hidden coarse:inline">Swipe or tap to walk</span>
+          <span className="coarse:hidden">Click, scroll or use ↑ ↓ to walk · Esc for home</span>
+          <span className="hidden coarse:inline">Swipe or tap to walk</span>
         </span>
       </p>
     </div>

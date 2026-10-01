@@ -43,10 +43,7 @@ function Ridge({ peaks, lit, shade }: { peaks: Peak[]; lit: string; shade: strin
 
 export default function Backdrop() {
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden"
-    >
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Sky: cool at the zenith, warming toward the horizon. */}
       <div
         className="absolute inset-0"
