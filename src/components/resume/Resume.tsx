@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { resume, stations } from '../../resume'
 import { layoutStops } from '../../walk/path'
 import {
@@ -6,17 +6,22 @@ import {
   dom,
   exitResume,
   getMode,
+  getView,
+  inColumn,
   goToSection,
   goToStop,
   leap,
   nudge,
   setStops,
+  setView,
   settleAhead,
   startDrive,
   stopDrive,
   step,
   subscribeMode,
+  subscribeView,
   walk,
+  type View,
 } from '../../walk/state'
 
 // The resume walk's DOM: the snowfield beneath everything, the resume itself
@@ -24,6 +29,7 @@ import {
 // and the controls. Layout and input live here; motion lives in the scene.
 
 const useResumeMode = () => useSyncExternalStore(subscribeMode, getMode) === 'resume'
+const useView = () => useSyncExternalStore(subscribeView, getView)
 
 /** Snow under the walk: a flat field revealed as the sky tilts away, plus the marks. */
 export function ResumeGround() {
@@ -58,6 +64,8 @@ export function ResumeText() {
   // the viewport and when the web fonts arrive, so watch the blocks' sizes.
   useLayoutEffect(() => {
     const relayout = () => {
+      // The plain column has its own sizes; the walk is measured when it returns.
+      if (inColumn()) return
       const bird = currentBird()
       dom.blocks.forEach((el, i) => {
         if (el) walk.sizes[i] = { w: el.offsetWidth, h: el.offsetHeight }
@@ -69,6 +77,7 @@ export function ResumeText() {
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(relayout)
     }
+    walk.relayout = schedule
     const ro = new ResizeObserver(schedule)
     dom.blocks.forEach((el) => el && ro.observe(el))
     window.addEventListener('resize', schedule)
@@ -138,7 +147,7 @@ const HOLD_MS = 240
 
 /** Keep Tab cycling through the walk's controls; the home page is inert behind them. */
 function trapTab(e: KeyboardEvent) {
-  const items = dom.hud ? [...dom.hud.querySelectorAll<HTMLElement>('button')] : []
+  const items = dom.hud ? [...dom.hud.querySelectorAll<HTMLElement>('button:not([tabindex="-1"])')] : []
   if (!items.length) return
   const first = items[0]
   const last = items[items.length - 1]
@@ -149,8 +158,95 @@ function trapTab(e: KeyboardEvent) {
   }
 }
 
+const VIEWS: { id: View; label: string; glyph: ReactNode }[] = [
+  {
+    id: 'walk',
+    label: 'Walk',
+    // Two faceted footprints, one ahead of the other.
+    glyph: (
+      <>
+        <polygon points="2.2,6.4 4.1,5.6 5.2,8.6 4.4,11.6 2.6,11.2 1.6,8.8" fill="currentColor" />
+        <polygon points="8.4,1 10.3,0.6 11.4,3.4 10.6,6.6 8.8,6.3 7.8,3.8" fill="currentColor" opacity="0.7" />
+      </>
+    ),
+  },
+  {
+    id: 'list',
+    label: 'List',
+    // Three lines of text, each led by a small diamond.
+    glyph: (
+      <>
+        <polygon points="1.6,1.2 3,2.6 1.6,4 0.2,2.6" fill="var(--color-orange)" />
+        <polygon points="4.6,2 12,2 12,3.2 4.6,3.2" fill="currentColor" />
+        <polygon points="1.6,4.6 3,6 1.6,7.4 0.2,6" fill="var(--color-orange)" />
+        <polygon points="4.6,5.4 12,5.4 12,6.6 4.6,6.6" fill="currentColor" />
+        <polygon points="1.6,8 3,9.4 1.6,10.8 0.2,9.4" fill="var(--color-orange)" />
+        <polygon points="4.6,8.8 10,8.8 10,10 4.6,10" fill="currentColor" />
+      </>
+    ),
+  },
+]
+
+/** Walk or List: a two-way switch, a navy slab sliding under the chosen layout. */
+function ViewToggle() {
+  const view = useView()
+  const index = VIEWS.findIndex((v) => v.id === view)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+
+  const onKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const n = VIEWS.length
+    const to =
+      e.key === 'ArrowRight' || e.key === 'ArrowDown' ? (index + 1) % n
+      : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? (index + n - 1) % n
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? n - 1
+      : -1
+    if (to < 0) return
+    // Arrows here change the layout; they must not also walk the penguin.
+    e.preventDefault()
+    e.stopPropagation()
+    setView(VIEWS[to].id)
+    buttons.current[to]?.focus()
+  }
+
+  return (
+    <div role="radiogroup" aria-label="Resume layout" onKeyDown={onKey} className="relative grid h-11 grid-cols-2 p-1">
+      <span aria-hidden className="rw-toggle-bed chamfer absolute inset-0" />
+      <span
+        aria-hidden
+        className="chamfer-sm crease-dark absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] transition-transform duration-500 ease-out-soft"
+        style={{ transform: `translateX(${index * 100}%)` }}
+      />
+      {VIEWS.map((v, i) => {
+        const on = v.id === view
+        return (
+          <button
+            key={v.id}
+            ref={(el) => void (buttons.current[i] = el)}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on ? 0 : -1}
+            onClick={() => setView(v.id)}
+            className={[
+              'relative z-10 flex cursor-pointer items-center justify-center gap-2 px-3 text-[14px] font-medium tracking-[0.01em] transition-colors duration-300 focus-visible:outline-offset-2 min-[25rem]:px-3.5',
+              on ? 'text-snow' : 'text-navy-soft hover:text-navy',
+            ].join(' ')}
+          >
+            <svg aria-hidden viewBox="0 0 12 12" className="size-3 shrink-0">
+              {v.glyph}
+            </svg>
+            {v.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function ResumeHud() {
   const active = useResumeMode()
+  const listView = useView() === 'list'
   const homeButton = useRef<HTMLButtonElement>(null)
   const [hinted, setHinted] = useState(false)
   const wasActive = useRef(false)
@@ -177,8 +273,9 @@ export function ResumeHud() {
     let wheelTimer = 0
     let holdTimer = 0 // a held arrow turns into cruising after HOLD_MS
     let heldKey = ''
-    // Until the scene is running, the resume is a plain scrolling column.
-    const live = () => dom.textLayer?.hasAttribute('data-live') ?? false
+    // Until the scene is running, and in the list view, the resume is a
+    // plain scrolling column: leave the wheel, touch and keys to it.
+    const live = () => !inColumn()
 
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || !live()) return // pinch zoom, or the plain column
@@ -310,7 +407,7 @@ export function ResumeHud() {
       className="resume-hud pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
     >
       {/* Top: a soft snow fade so text slides under the controls. */}
-      <div aria-hidden className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-ice from-40% via-ice/85 to-transparent" />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-ice from-55% wide-walk:h-32 wide-walk:from-40% via-ice/85 to-transparent" />
       <div aria-hidden className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-ice from-25% via-ice/80 to-transparent" />
 
       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 px-4 pt-4 wide-walk:px-8 wide-walk:pt-7">
@@ -334,33 +431,42 @@ export function ResumeHud() {
           </span>
         </button>
 
-        <nav ref={(el) => void (dom.nav = el)} aria-label="Resume sections" className="pointer-events-auto pt-1">
-          <ul className="flex items-center gap-0.5 wide-walk:gap-2">
-            {resume.map((s, i) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  data-section={i}
-                  onClick={() => {
-                    if (dom.textLayer?.hasAttribute('data-live')) goToSection(i)
-                    else document.getElementById(`resume-${s.id}`)?.scrollIntoView({ block: 'start' })
-                    setHinted(true)
-                  }}
-                  className="rw-nav px-1.5 py-2 font-mono text-[10px] tracking-[0.14em] uppercase min-[25rem]:text-[11px] wide-walk:px-2.5"
-                >
-                  {s.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div aria-hidden className="mx-1.5 h-px bg-navy/15 wide-walk:mx-2.5">
-            <div ref={(el) => void (dom.progress = el)} className="h-px origin-left scale-x-0 bg-orange" />
-          </div>
-        </nav>
+        {/* Phones stack the layout switch over the section links; wider
+            screens set the links beside it. */}
+        <div className="pointer-events-auto flex flex-col-reverse items-end gap-1 wide-walk:flex-row wide-walk:items-center wide-walk:gap-5">
+          <nav ref={(el) => void (dom.nav = el)} aria-label="Resume sections">
+            <ul className="flex items-center gap-0.5 wide-walk:gap-2">
+              {resume.map((s, i) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    data-section={i}
+                    onClick={() => {
+                      if (!inColumn()) goToSection(i)
+                      else
+                        document.getElementById(`resume-${s.id}`)?.scrollIntoView({
+                          block: 'start',
+                          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                        })
+                      setHinted(true)
+                    }}
+                    className="rw-nav px-1.5 py-2 font-mono text-[10px] tracking-[0.14em] uppercase min-[25rem]:text-[11px] wide-walk:px-2.5"
+                  >
+                    {s.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div aria-hidden className="mx-1.5 h-px bg-navy/15 wide-walk:mx-2.5">
+              <div ref={(el) => void (dom.progress = el)} className="h-px origin-left scale-x-0 bg-orange" />
+            </div>
+          </nav>
+          <ViewToggle />
+        </div>
       </div>
 
       <p
-        data-hidden={hinted || undefined}
+        data-hidden={hinted || listView || undefined}
         className="absolute inset-x-0 bottom-5 flex justify-center transition-opacity duration-500 data-hidden:opacity-0"
       >
         <span className="rounded-full bg-snow/95 px-3.5 py-1.5 font-mono text-[11px] tracking-[0.16em] text-navy-soft uppercase shadow-[0_0_14px_6px_var(--color-snow)]">

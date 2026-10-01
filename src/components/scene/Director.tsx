@@ -4,7 +4,7 @@ import { MathUtils, Vector3, type PerspectiveCamera } from 'three'
 import { PENGUIN_HEIGHT } from './Penguin'
 import { drawGround, makeRidges, type Print, type ScreenPoint } from './ground'
 import { stations } from '../../resume'
-import { applyDrive, dom, getMode, HOME_FACING, walk, walker, currentBird } from '../../walk/state'
+import { applyDrive, dom, getMode, getView, HOME_FACING, walk, walker, currentBird } from '../../walk/state'
 import {
   BELOW,
   BODY_LIFT,
@@ -47,6 +47,10 @@ const STRIDE = { base: 0.26, perSpeed: 0.045, max: 0.42 }
 const MAX_PRINTS = 64
 /** Seconds to fade to snow and back around a reduced-motion jump, and to land from the plain column. */
 const VEIL = { out: 0.12, in: 0.22, land: 0.45 }
+/** Seconds to fade the resume out before swapping walk and list layouts, and back in after. */
+const SWAP = { out: 0.24, in: 0.36 }
+/** Where the list column's reading starts, just under the controls: its top padding (index.css). */
+const listTop = (layer: HTMLElement) => (parseFloat(getComputedStyle(layer).paddingTop) || 120) - 8
 
 /**
  * A camera framing: it looks at `target` (relative to the penguin's feet)
@@ -137,6 +141,9 @@ export default function Director() {
       skyShift: NaN,
       homeO: NaN,
       textO: 0,
+      list: false, // the text layer is laid out as the plain list (index.css)
+      swap: 0, // 0 shown .. 1 faded out for a layout swap
+      groundO: NaN,
       layerO: NaN,
       layerVis: '',
       hudO: NaN,
@@ -170,13 +177,20 @@ export default function Director() {
     if (!s.live && dom.textLayer && dom.hud) {
       s.live = true
       dom.textLayer.setAttribute('data-live', '')
+      if (getView() === 'list') {
+        s.list = true
+        dom.textLayer.setAttribute('data-list', '')
+      }
       dom.hud.style.transition = 'none'
       if (resume) {
         // Arrived on /#resume and read the plain column while the scene
-        // loaded: land straight in the walk, rising out of the snow.
+        // loaded: land straight in the walk, rising out of the snow (in the
+        // list view the column simply stays).
         s.raw = 1
-        s.veil = 1
-        s.veilPhase = 2
+        if (!s.list) {
+          s.veil = 1
+          s.veilPhase = 2
+        }
       }
     }
 
@@ -341,7 +355,48 @@ export default function Director() {
     s.textO = resume || reduce
       ? smooth(0.62, 1, blend)
       : Math.min(s.textO, MathUtils.damp(s.textO, smooth(0.82, 1, blend), 12, dt))
-    const textO = Math.round(s.textO * 1000) / 1000
+    // Walk <-> list: fade the resume out, swap the layout while it's hidden,
+    // fade it back in. With nothing on screen the swap is immediate.
+    const wantList = getView() === 'list'
+    if (wantList !== s.list && dom.textLayer) {
+      s.swap = s.textO === 0 ? 1 : Math.min(1, s.swap + dt / SWAP.out)
+      if (s.swap === 1) {
+        const layer = dom.textLayer
+        // Keep the reader's place: the list opens where the penguin stands,
+        // and the walk resumes at the first block in view.
+        let k = -1
+        if (!wantList && resume) {
+          const top = layer.scrollTop + listTop(layer)
+          k = dom.blocks.findIndex((el) => !!el && el.offsetTop + el.offsetHeight > top)
+        }
+        s.list = wantList
+        layer.toggleAttribute('data-list', wantList)
+        if (wantList) {
+          // The column lays the blocks out itself: drop the walk's inline placement.
+          dom.blocks.forEach((el, i) => {
+            if (!el) return
+            el.style.transform = ''
+            el.style.opacity = ''
+            el.style.removeProperty('--o')
+            el.removeAttribute('data-current')
+            s.blockX[i] = s.blockY[i] = s.blockO[i] = NaN
+            s.blockVis[i] = true
+          })
+          let at = nearestStop(walk.pos, stops)
+          // From a bullet, open at its entry; from a section's first entry, at the section.
+          while (at > 0 && stations[at].kind === 'line') at--
+          if (at > 0 && stations[at - 1].kind === 'section') at--
+          const el = dom.blocks[at]
+          layer.scrollTop = at > 0 && el ? el.offsetTop - listTop(layer) : 0
+        } else {
+          if (k >= 0) walk.pos = walk.target = stops[k]
+          walk.relayout()
+        }
+        s.section = -2 // re-mark the current section link
+      }
+    } else s.swap = Math.max(0, s.swap - dt / SWAP.in)
+    const shown = 1 - smooth(0, 1, s.swap)
+    const textO = Math.round(s.textO * shown * 1000) / 1000
     for (let i = 0; i < stations.length; i++) {
       const [a, b] = bird.wide ? stickyRange(i, stops) : [stops[i], stops[i]]
       const off = pos < a ? a - pos : pos > b ? pos - b : 0
@@ -358,13 +413,13 @@ export default function Director() {
       dom.textLayer.style.visibility = layerVis
     }
     // The controls (and the snow fades under them) come and go with the text.
-    const hudO = Math.round(textO * (s.veilMode ? 1 - s.veil : 1) * 1000) / 1000
+    const hudO = Math.round(s.textO * (s.veilMode ? 1 - s.veil : 1) * 1000) / 1000
     if (hudO !== s.hudO && dom.hud) {
       s.hudO = hudO
       dom.hud.style.opacity = String(hudO)
     }
 
-    if (textO > 0) {
+    if (textO > 0 && !s.list) {
       const anchor = s.anchor
       for (let i = 0; i < stations.length; i++) {
         const el = dom.blocks[i]
@@ -415,7 +470,21 @@ export default function Director() {
     }
 
     // --- HUD: current section and progress ----------------------------------
-    const section = stations[here].section
+    // Walking, from the penguin's stop; in the list, from the column's scroll.
+    let section = stations[here].section
+    let progress = lastStop > 0 ? pos / lastStop : 0
+    const layer = dom.textLayer
+    if (s.list && layer && resume) {
+      const top = layer.scrollTop
+      const room = layer.scrollHeight - layer.clientHeight
+      progress = room > 0 ? top / room : 0
+      section = 0
+      for (let i = 0; i < stations.length; i++) {
+        const el = dom.blocks[i]
+        if (stations[i].kind === 'section' && el && el.offsetTop <= top + bird.vh * 0.35) section = stations[i].section
+      }
+      if (room > 0 && top >= room - 2) section = stations[stations.length - 1].section
+    }
     if (section !== s.section && dom.nav) {
       s.section = section
       dom.nav.querySelectorAll<HTMLElement>('[data-section]').forEach((b) => {
@@ -424,7 +493,7 @@ export default function Director() {
         else b.removeAttribute('aria-current')
       })
     }
-    const progress = Math.round((lastStop > 0 ? pos / lastStop : 0) * 1000) / 1000
+    progress = Math.round(progress * 1000) / 1000
     if (progress !== s.progress && dom.progress) {
       s.progress = progress
       dom.progress.style.transform = `scaleX(${progress})`
@@ -432,6 +501,12 @@ export default function Director() {
 
     // --- Snowfield ---------------------------------------------------------------
     const canvas = dom.ground
+    // The trail is the walk's; under the list it fades away.
+    const groundO = s.list ? 0 : Math.round(shown * 1000) / 1000
+    if (canvas && groundO !== s.groundO) {
+      s.groundO = groundO
+      canvas.style.opacity = groundO === 1 ? '' : String(groundO)
+    }
     const ctx = canvas?.getContext('2d')
     if (canvas && ctx) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)

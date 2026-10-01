@@ -142,10 +142,22 @@ body {
 }
 
 /* The resume walk (components/resume). The scene positions every block each
-   frame with a transform; sizes come from here and feed the path layout. */
+   frame with a transform; sizes come from here and feed the path layout.
+
+   The text layer has two layouts. The walk (data-live, set once the scene is
+   up) lays the blocks along the path. The plain reading column is used until
+   then, and whenever the list view is chosen (data-list, set by the scene
+   under a cross-fade). */
 .resume-layer {
+  /* Where the plain column starts: clear of the controls, which stack on phones. */
+  --list-top: 8.5rem;
   opacity: 0;
   visibility: hidden;
+}
+@media (width >= 45rem) {
+  .resume-layer {
+    --list-top: 7.5rem;
+  }
 }
 .rw-block {
   position: absolute;
@@ -160,9 +172,10 @@ body {
   opacity: var(--o, 1);
 }
 /* Narrow screens hang the text right over the trail: lay it on a soft plate
-   of snow so the path and footprints never run through the words. */
+   of snow so the path and footprints never run through the words. (Bullets
+   are on placards of their own.) */
 @media (width < 45rem) {
-  .resume-layer[data-live] .rw-block {
+  .resume-layer[data-live]:not([data-list]) .rw-block:not(.rw-line) {
     border-radius: 18px;
     background: color-mix(in oklab, var(--color-ice) 82%, transparent);
     box-shadow: 0 0 18px 14px color-mix(in oklab, var(--color-ice) 82%, transparent);
@@ -194,9 +207,6 @@ body {
   height: 0.62rem;
   transition: transform 0.4s var(--ease-out-soft);
 }
-.rw-line[data-current] .rw-mark {
-  transform: scale(1.25);
-}
 @media (width >= 45rem) {
   .rw-section {
     font-size: clamp(3.25rem, 5vw, 4.5rem);
@@ -207,35 +217,94 @@ body {
     text-align: right;
   }
   .rw-line {
-    width: min(27rem, calc(50vw - 54px - 2.5rem));
+    width: min(28.5rem, calc(50vw - 54px - 2.5rem));
     font-size: 16px;
   }
 }
-/* Until the scene takes over (still loading, or no WebGL), the resume is a
-   plain, scrollable reading column on the snow. */
-.resume-layer[data-mode="resume"]:not([data-live]) {
+
+/* Ice placards: on the walk each bullet sits on a small frosted slab, cut at
+   the corners like the buttons, resting on the snow. The one beside the
+   penguin lifts, its shadow spreading, with an orange edge. */
+@property --accent {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.resume-layer[data-live]:not([data-list]) .rw-line {
+  --cut: 8px;
+  --accent: 0;
+  isolation: isolate;
+  padding: 0.75rem 1.1rem 0.8rem 2.3rem;
+  filter: drop-shadow(0 1px 0.5px rgb(31 37 54 / 0.12)) drop-shadow(0 5px 7px rgb(31 37 54 / 0.07));
+  transition:
+    translate 0.55s var(--ease-out-soft),
+    filter 0.55s var(--ease-out-soft),
+    --accent 0.45s var(--ease-out-soft);
+}
+/* The rim: light on the upper left, a navy tint where the slab turns away. */
+.resume-layer[data-live]:not([data-list]) .rw-line::before,
+.resume-layer[data-live]:not([data-list]) .rw-line::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+  opacity: calc(0.62 + 0.38 * var(--o, 1));
+}
+.resume-layer[data-live]:not([data-list]) .rw-line::before {
+  inset: 0;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.95), rgb(31 37 54 / 0.2));
+}
+/* The face: frosted ice, brightest where the low sun catches it. */
+.resume-layer[data-live]:not([data-list]) .rw-line::after {
+  --cut: 7.6px;
+  inset: 1px;
+  background:
+    linear-gradient(90deg, rgb(238 150 42 / var(--accent)) 0 3px, transparent 3px),
+    linear-gradient(155deg, rgb(255 255 255 / 0.75) 0, rgb(255 255 255 / 0) 48%),
+    rgb(249 248 245 / 0.92);
+}
+/* Quieter, never faint: the words keep at least 4.5:1 on the slab. */
+.resume-layer[data-live]:not([data-list]) .rw-line > * {
+  opacity: calc(0.45 + 0.55 * var(--o, 1));
+}
+.resume-layer[data-live]:not([data-list]) .rw-mark {
+  top: calc(0.75rem + 0.45em);
+  left: 0.95rem;
+}
+.resume-layer[data-live]:not([data-list]) .rw-line[data-current] {
+  --accent: 1;
+  translate: 0 -3px;
+  filter: drop-shadow(0 2px 1px rgb(31 37 54 / 0.1)) drop-shadow(0 14px 16px rgb(31 37 54 / 0.13));
+}
+.rw-line[data-current] .rw-mark {
+  transform: scale(1.25);
+}
+
+/* The plain column: while the scene loads (or without WebGL), and the list
+   view, which keeps it through the fade home (the scene then hides the layer). */
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
-  z-index: 1; /* over the poster, under the controls */
-  padding: 7.5rem 1.5rem 5rem;
+  z-index: 1; /* over the poster and the penguin, under the controls */
+  padding: var(--list-top) 1.5rem 5rem;
   background: var(--color-ice);
 }
-.resume-layer[data-mode="resume"]:not([data-live]) .rw-block {
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) .rw-block {
   position: relative;
   width: auto;
   max-width: 36rem;
   margin: 0 auto 1.1rem;
   text-align: left;
 }
-.resume-layer[data-mode="resume"]:not([data-live]) .rw-section {
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) .rw-section {
   margin-top: 2.5rem;
   margin-bottom: 1.5rem;
-  scroll-margin-top: 7rem;
+  scroll-margin-top: calc(var(--list-top) - 0.5rem);
 }
-.resume-layer[data-mode="resume"]:not([data-live]) .rw-entry {
+.resume-layer:is([data-mode="resume"]:not([data-live]), [data-list]) .rw-entry {
   margin-top: 1.75rem;
 }
 
@@ -246,4 +315,18 @@ body {
 .rw-nav:hover,
 .rw-nav[aria-current] {
   color: var(--color-navy);
+}
+
+/* The Walk / List switch (ResumeHud): a frosted bed, a navy slab on the choice. */
+.chamfer-sm {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+}
+.rw-toggle-bed {
+  background:
+    linear-gradient(115deg, rgb(31 37 54 / 0.07) 50%, rgb(31 37 54 / 0.11) 50%),
+    color-mix(in oklab, var(--color-snow) 90%, transparent);
+}
+/* A diagonal crease, so the flat slab reads as two facets of one plane. */
+.crease-dark {
+  background: linear-gradient(115deg, #2a3146 50%, var(--color-navy) 50%);
 }
