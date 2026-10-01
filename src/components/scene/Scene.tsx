@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { CanvasTexture, SRGBColorSpace, type PerspectiveCamera } from 'three'
 import Penguin, { PENGUIN_HEIGHT } from './Penguin'
@@ -6,24 +6,38 @@ import { installPointerTracking } from '../../attention'
 
 const FOV = 28
 
-// Where the penguin stands, in shares of the hero (which the canvas fills):
-// `x` its center, `feet` its feet from the top (keep them just below
-// --horizon in index.css), `height` its height. `maxW` caps the height as a
-// share of the width, so narrow or squat windows shrink it instead of crowding
-// the type.
+/** The `wide` variant in index.css. One query, so CSS and the camera agree. */
+export const WIDE_QUERY = '(width >= 48rem) and (min-aspect-ratio: 4/5)'
+/** The poster composition never spreads wider than this (App.tsx, --frame). */
+const FRAME = 1680
+
+// Where the penguin stands, in shares of the canvas: `x` its center (of the
+// composition frame), `feet` from the top, `height` its height, capped at
+// `maxW` of the frame width so squat windows shrink it instead of crowding
+// the type. Poster: the canvas is the hero, feet just below --horizon (63%).
+// Stacked: the canvas is the stage box in index.css (feet at 94%, 80% tall).
 const STAND = {
   wide: { x: 0.69, feet: 0.855, height: 0.62, maxW: 0.36 },
-  narrow: { x: 0.52, feet: 0.7, height: 0.38, maxW: 0.8 },
+  narrow: { x: 0.52, feet: 0.94, height: 0.8, maxW: 0.8 },
 }
+
+function subscribe(cb: () => void) {
+  const mq = window.matchMedia(WIDE_QUERY)
+  mq.addEventListener('change', cb)
+  return () => mq.removeEventListener('change', cb)
+}
+const isWide = () => window.matchMedia(WIDE_QUERY).matches
 
 function Rig() {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const size = useThree((s) => s.size)
+  const wide = useSyncExternalStore(subscribe, isWide)
 
   useEffect(() => {
     const { width: w, height: h } = size
-    const stand = w >= 768 && w / h >= 0.8 ? STAND.wide : STAND.narrow // the `wide` variant in index.css
-    const px = Math.min(stand.height * h, stand.maxW * w)
+    const stand = wide ? STAND.wide : STAND.narrow
+    const frame = Math.min(w, FRAME)
+    const px = Math.min(stand.height * h, stand.maxW * frame)
     const viewH = (PENGUIN_HEIGHT * h) / px // world units spanned by the canvas height
     const dist = viewH / (2 * Math.tan((FOV * Math.PI) / 360))
     const targetY = (stand.feet - 0.5) * viewH
@@ -31,9 +45,10 @@ function Rig() {
     camera.lookAt(0, targetY, 0)
     // Shift the lens rather than the camera, so the penguin keeps the same
     // straight-on view wherever it stands in the frame.
-    camera.setViewOffset(w, h, -(stand.x - 0.5) * w, 0, w, h)
+    const x = (w - frame) / 2 + stand.x * frame
+    camera.setViewOffset(w, h, w / 2 - x, 0, w, h)
     camera.updateProjectionMatrix()
-  }, [camera, size])
+  }, [camera, size, wide])
 
   return null
 }

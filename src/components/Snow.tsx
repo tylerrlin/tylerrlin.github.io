@@ -41,8 +41,10 @@ export default function Snow() {
       canvas.width = Math.round(w * dpr)
       canvas.height = Math.round(h * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      const horizon = parseFloat(getComputedStyle(canvas).getPropertyValue('--horizon')) || 70
-      ground = h * (horizon / 100 + 0.06)
+      // --horizon may be a share or a length, so measure the drawn line.
+      const line = document.querySelector('[data-horizon]')
+      const horizon = line ? line.getBoundingClientRect().top - canvas.getBoundingClientRect().top : h * 0.64
+      ground = horizon + h * 0.06
       const count = Math.min(90, Math.round((w * h) / 16000))
       flakes = Array.from({ length: count }, () => spawn())
     }
@@ -82,17 +84,18 @@ export default function Snow() {
       raf = requestAnimationFrame(tick)
     }
 
-    resize()
-    start()
-    const onResize = () => {
+    // Follows the canvas, not the window: when stacked, the page can grow.
+    const ro = new ResizeObserver(() => {
       resize()
       if (reduce.matches) draw(0)
-    }
-    window.addEventListener('resize', onResize)
+    })
+    ro.observe(canvas)
+    resize()
+    start()
     reduce.addEventListener('change', start)
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('resize', onResize)
+      ro.disconnect()
       reduce.removeEventListener('change', start)
     }
   }, [])

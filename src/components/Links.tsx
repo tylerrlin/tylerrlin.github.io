@@ -31,14 +31,19 @@ const ICONS: Record<SocialLink['icon'], ReactNode> = {
   ),
   github: (
     <>
-      <polygon
-        className="fd"
-        points="14.74,1.76 19.5,4.5 22.24,9.26 22.24,14.74 19.5,19.5 14.74,22.24 9.26,22.24 4.5,19.5 1.76,14.74 1.76,9.26 4.5,4.5 9.26,1.76"
-      />
-      <polygon className="fl" points="11,10.5 9.26,1.76 14.74,1.76 19.5,4.5" />
-      <polygon className="fl" points="11,10.5 1.76,9.26 4.5,4.5 9.26,1.76" />
-      <polygon className="fm" points="11,10.5 19.5,4.5 22.24,9.26 22.24,14.74" />
-      <polygon className="fm" points="11,10.5 4.5,19.5 1.76,14.74 1.76,9.26" />
+      {/* A twelve-sided disc fanned from the center, so each wedge catches the light. */}
+      <polygon className="fm" points="12,12 14.74,1.76 19.5,4.5" />
+      <polygon className="fd" points="12,12 19.5,4.5 22.24,9.26" />
+      <polygon className="fk" points="12,12 22.24,9.26 22.24,14.74" />
+      <polygon className="fd" points="12,12 22.24,14.74 19.5,19.5" />
+      <polygon className="fk" points="12,12 19.5,19.5 14.74,22.24" />
+      <polygon className="fd" points="12,12 14.74,22.24 9.26,22.24" />
+      <polygon className="fm" points="12,12 9.26,22.24 4.5,19.5" />
+      <polygon className="fd" points="12,12 4.5,19.5 1.76,14.74" />
+      <polygon className="fm" points="12,12 1.76,14.74 1.76,9.26" />
+      <polygon className="fl" points="12,12 1.76,9.26 4.5,4.5" />
+      <polygon className="fm" points="12,12 4.5,4.5 9.26,1.76" />
+      <polygon className="fl" points="12,12 9.26,1.76 14.74,1.76" />
       <polygon
         className="fi"
         points="9.4,22.24 9.4,19.6 7.5,19.9 5.8,18.3 4.7,16.8 4.7,16.1 6.3,17.2 9.4,18.1 10.1,16.7 6.2,15.2 5.3,11.4 6.4,8.6 6.5,5.8 9.4,6.9 12,6.5 14.7,6.9 17.6,5.8 17.7,8.6 18.8,11.4 17.8,15.2 13.9,16.7 14.7,18.6 14.7,22.24"
@@ -54,28 +59,35 @@ const glance = {
 
 export default function Links() {
   return (
-    <nav aria-label="Links" className="flex items-center justify-center gap-5 wide:justify-start">
+    <nav aria-label="Links" className="flex items-center justify-center gap-3 min-[25rem]:gap-4 wide:justify-start">
       <a
         href={profile.resume}
         target="_blank"
         rel="noopener noreferrer"
         {...glance}
-        className="group inline-flex h-11 items-center gap-2.5 rounded-[3px] bg-navy pr-4 pl-5 text-[15px] font-medium tracking-[0.01em] text-snow transition-colors duration-300 hover:bg-navy-soft"
+        className="group block focus-visible:outline-offset-2"
       >
-        Resume
-        <svg
-          aria-hidden
-          viewBox="0 0 12 12"
-          className="size-3 text-orange transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-        >
-          <path d="M3 9 9 3M4 3h5v5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-        <span className="sr-only">(PDF, opens in a new tab)</span>
+        {/* Chamfered corners, cut like one of the penguin's facets. */}
+        <span className="chamfer flex h-12 items-center gap-3 bg-navy pr-4 pl-5 text-[15px] min-[25rem]:pr-5 min-[25rem]:pl-6 font-medium tracking-[0.01em] text-snow transition-colors duration-300 group-hover:bg-navy-soft">
+          Resume
+          <span aria-hidden className="font-mono text-[10px] tracking-[0.18em] text-orange">
+            PDF
+          </span>
+          <svg
+            aria-hidden
+            viewBox="0 0 12 12"
+            className="size-3 transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          >
+            <polygon points="3,1 11,1 11,9" fill="var(--color-orange)" />
+            <polygon points="1,9.6 9,1.6 10.4,3 2.4,11" fill="var(--color-snow)" />
+          </svg>
+        </span>
+        <span className="sr-only"> (PDF, opens in a new tab)</span>
       </a>
 
-      <span aria-hidden className="h-6 w-px bg-navy/20" />
+      <span aria-hidden className="h-7 w-px bg-navy/20" />
 
-      <ul className="-mx-2.5 flex items-center">
+      <ul className="-mr-2.5 flex items-center">
         {socials.map(({ label, href, icon }) => {
           const external = href.startsWith('http')
           return (
@@ -86,11 +98,20 @@ export default function Links() {
                 title={label}
                 {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 {...glance}
-                className="facets grid size-11 place-items-center rounded-[3px]"
+                className="facets group relative grid size-12 place-items-center focus-visible:outline-offset-2"
               >
-                <svg aria-hidden viewBox="0 0 24 24" className="size-[26px] wide:size-6">
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="relative z-10 size-7 transition-transform duration-300 ease-out-soft group-hover:-translate-y-[3px] group-focus-visible:-translate-y-[3px] md:size-[30px]"
+                >
                   {ICONS[icon]}
                 </svg>
+                {/* A shadow on the snow that appears as the glyph lifts. */}
+                <span
+                  aria-hidden
+                  className="absolute bottom-[5px] h-[3px] w-5 scale-x-0 rounded-[50%] bg-navy/25 blur-[1.5px] transition-transform duration-300 ease-out-soft group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                />
               </a>
             </li>
           )

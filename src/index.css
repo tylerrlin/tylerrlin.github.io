@@ -1,22 +1,18 @@
 @import "tailwindcss";
 
 /* The poster layout (name on the horizon, penguin beside it) needs a window
-   at least as wide as it is nearly tall; otherwise the page stacks. Keep in
-   step with STAND in Scene.tsx. */
+   at least 48rem wide and not much taller than it is wide; otherwise the page
+   stacks. Scene.tsx reads the same query (WIDE_QUERY) to frame the penguin. */
 @custom-variant wide (@media (width >= 48rem) and (min-aspect-ratio: 4/5));
 
 @theme {
   /* Palette drawn from the penguin: navy back, ice belly, orange ear patch. */
   --color-navy: #1f2536;
-  --color-navy-soft: #3a4257;
-  --color-slate: #525b70; /* muted text, 5.6:1 on ice */
+  --color-navy-soft: #3a4257; /* secondary text, >= 7:1 on sky and snow */
   --color-ice: #ece9e2;
   --color-snow: #f6f4ef;
-  --color-mist: #c9d3e0;
-  --color-frost: #dfe4ea;
   --color-orange: #ee962a;
-  --color-ember: #a8570f; /* orange for text/focus on light, 4.9:1 on ice */
-  --color-ember-deep: #8a4608; /* small orange text over the sky gradient, ≥5:1 */
+  --color-ember: #a8570f; /* focus ring on light, 4.9:1 on ice */
 
   --font-display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -25,19 +21,46 @@
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* One coordinate system for sky, ridges, snowfield, sun, penguin and type.
+
+   Stacked (phones, portrait tablets): everything is a length, built top down
+   from the name and the penguin's stage, so the text below the horizon flows
+   and the page scrolls on short screens instead of clipping. The stage is a
+   box the penguin fills (Rig in Scene.tsx: feet at 94%, 80% tall); its top
+   tucks just under the name so the head sits close beneath it. */
 :root {
   color-scheme: light;
-  /* Horizon height as a share of the hero; shared by sky, ridges, ground, the
-     type and the penguin's footing (STAND in Scene.tsx). Stacked layout first. */
-  --horizon: 64%;
-  --sun-x: 70%;
+  --name-size: min(26vw, 12.5svh);
+  --stage: clamp(12rem, 54svh, 36rem);
+  /* Center the whole stack (name, penguin, then tagline and links, about
+     9rem) when there is room; short screens keep a fixed top margin. */
+  --stack: calc(1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.82 + 9rem);
+  --name-top: max(clamp(1.75rem, 6svh, 4.5rem), (100svh - var(--stack)) * 0.5);
+  --horizon: calc(var(--name-top) + 1.75rem + var(--name-size) * 0.95 + var(--stage) * 0.68);
+  --stage-top: calc(var(--horizon) - var(--stage) * 0.8);
+  --feet: calc(var(--horizon) + var(--stage) * 0.14);
+  /* The low sun sits right behind the penguin, framing it. */
+  --sun-x: 50%;
+  --sun-y: calc(var(--horizon) - var(--stage) * 0.36);
 }
 
+/* Poster: shares of the one-screen hero. The name stands on the horizon and
+   the penguin's feet sit at 85.5% (STAND.wide in Scene.tsx). */
 @media (width >= 48rem) and (min-aspect-ratio: 4/5) {
   :root {
     --horizon: 63%;
     --sun-x: 53%;
+    --sun-y: 50%;
+    /* Text inset: 7% of a composition frame capped at 1680px (FRAME in
+       Scene.tsx), centered on ultrawide screens. With the name at most 15vw,
+       "Lin" ends near 49% of the frame and the beak near 57%. */
+    --pad-x: calc(max(0px, (100vw - 1680px) / 2) + max(2.5rem, min(7vw, 7.35rem)));
   }
+}
+
+/* Low-poly corners, matching the faceted icons. */
+.chamfer {
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
 }
 
 html {
@@ -96,27 +119,18 @@ body {
   }
 }
 
-/* Faceted link glyphs (Links.tsx): three navy planes, an orange accent, ice cutouts.
-   On hover the glyph rises a touch and its lit planes catch the low sun. */
-.facets svg {
-  transition: translate 0.35s var(--ease-out-soft);
-}
+/* Faceted link glyphs (Links.tsx): three navy planes lit from the upper left,
+   an orange accent, snow cutouts. On hover the lit planes catch the low sun. */
 .facets polygon {
   transition: fill 0.35s var(--ease-out-soft);
 }
 .facets .fd { fill: var(--color-navy); }
 .facets .fm { fill: #2c344b; }
 .facets .fl { fill: #434c67; }
+.facets .fk { fill: #151a27; }
 .facets .fs { fill: var(--color-orange); }
 .facets .fsd { fill: #d27a14; }
 .facets .fi { fill: var(--color-snow); }
-.facets:focus-visible {
-  outline-offset: 0;
-}
-.facets:hover svg,
-.facets:focus-visible svg {
-  translate: 0 -2px;
-}
 .facets:hover .fl,
 .facets:focus-visible .fl {
   fill: #5d6886;

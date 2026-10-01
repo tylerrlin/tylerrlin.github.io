@@ -52,10 +52,11 @@ export default function Backdrop() {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, #aebdd0 0%, #c6d0dd 26%, #dcdfe3 48%, #eee4d6 var(--horizon), #eee4d6 100%)',
+            'linear-gradient(180deg, #aebdd0 0, #c6d0dd calc(var(--horizon) * 0.4), #dcdfe3 calc(var(--horizon) * 0.76), #eee4d6 var(--horizon), #eee4d6 100%)',
         }}
       />
-      {/* Low sun and its glow, behind the penguin. */}
+      {/* Low sun and its glow: between name and penguin on the poster, right
+          behind the penguin when stacked. */}
       <div
         className="absolute inset-0"
         style={{
@@ -64,10 +65,10 @@ export default function Backdrop() {
         }}
       />
       <div
-        className="absolute size-28 -translate-x-1/2 -translate-y-1/2 rounded-full md:size-36"
+        className="absolute size-40 -translate-x-1/2 -translate-y-1/2 rounded-full wide:size-36"
         style={{
           left: 'var(--sun-x)',
-          top: 'calc(var(--horizon) - 13%)',
+          top: 'var(--sun-y)',
           background: 'radial-gradient(circle, #fbf1e2 0%, #f8e6cc 55%, rgba(248,230,204,0) 71%)',
         }}
       />
@@ -92,6 +93,7 @@ export default function Backdrop() {
         }}
       />
       <div
+        data-horizon
         className="absolute inset-x-0 h-px"
         style={{ top: 'var(--horizon)', background: 'rgba(31,37,54,0.08)' }}
       />
