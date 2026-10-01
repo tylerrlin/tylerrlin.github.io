@@ -58,17 +58,6 @@ const FOCUS_PITCH = { up: -0.14, down: 0.3 }
 
 type Gaze = { yaw: number; pitch: number; roll: number }
 
-// Click reaction: a quick, small head shake that dies away (radians, seconds).
-const SHAKE = { yaw: 0.2, roll: 0.05, hz: 3.4, decay: 0.24, duration: 0.85 }
-
-/** Head offset at time τ after a click; alternate clicks start the other way. */
-function shakeOffset(tau: number, dir: number) {
-  if (tau < 0 || tau > SHAKE.duration) return { yaw: 0, roll: 0 }
-  const wave = Math.sin(2 * Math.PI * SHAKE.hz * tau) * Math.exp(-tau / SHAKE.decay)
-  const ease = Math.min(tau / 0.04, 1) // no snap on the first frame
-  return { yaw: dir * SHAKE.yaw * wave * ease, roll: -dir * SHAKE.roll * wave * ease }
-}
-
 function pickGaze(prev: Gaze, home: Gaze): Gaze {
   // Usually glance somewhere new; sometimes settle back toward home.
   if (Math.random() < 0.35) {
@@ -186,9 +175,6 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       hit: new Vector3(),
       head: new Vector3(),
       q: new Quaternion(),
-      shakeStart: -Infinity,
-      shakePending: false,
-      shakes: 0,
     }),
     [],
   )
@@ -254,16 +240,6 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       }
     }
 
-    // Clicked: shake the head a little (skipped with reduced motion).
-    if (state.shakePending) {
-      state.shakePending = false
-      if (!still && t - state.shakeStart > SHAKE.duration * 0.5) {
-        state.shakeStart = t
-        state.shakes++
-      }
-    }
-    const shake = shakeOffset(t - state.shakeStart, state.shakes % 2 ? 1 : -1)
-
     // Critically-damped easing: quick but soft head turns, then a still hold.
     // With reduced motion the head snaps to where it should look, no idling.
     const { gaze, target } = state
@@ -272,7 +248,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
     gaze.pitch = MathUtils.damp(gaze.pitch, target.pitch, 2.6 * k, dt)
     gaze.roll = MathUtils.damp(gaze.roll, target.roll, 2.2 * k, dt)
 
-    state.euler.set(gaze.pitch, gaze.yaw + shake.yaw, gaze.roll + shake.roll)
+    state.euler.set(gaze.pitch, gaze.yaw, gaze.roll)
     uniforms.uHead.value.setFromMatrix4(state.m4.makeRotationFromEuler(state.euler))
 
     // Body: slow breathing, a gentle weight shift, and a slight follow of the head.
@@ -285,22 +261,7 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
   })
 
   return (
-    <group
-      ref={outer}
-      rotation={[0, FACING, 0]}
-      scale={SCALE}
-      onClick={(e) => {
-        e.stopPropagation()
-        state.shakePending = true
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation()
-        document.body.style.cursor = 'pointer'
-      }}
-      onPointerOut={() => {
-        document.body.style.cursor = ''
-      }}
-    >
+    <group ref={outer} rotation={[0, FACING, 0]} scale={SCALE}>
       <group ref={body}>
         <primitive object={scene} />
       </group>

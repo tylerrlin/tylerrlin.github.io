@@ -66,10 +66,6 @@ export default function Scene() {
         frameloop={visible ? 'always' : 'never'}
         camera={{ fov: FOV, near: 0.1, far: 50 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        // The wrapper ignores the pointer so it never blocks the page; the
-        // canvas itself takes clicks (the penguin is clickable) but still lets
-        // touch scroll pass through.
-        style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
         aria-hidden
       >
         <Rig />
