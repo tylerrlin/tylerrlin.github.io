@@ -58,6 +58,11 @@ const FOCUS_PITCH = { up: -0.14, down: 0.3 }
 
 type Gaze = { yaw: number; pitch: number; roll: number }
 
+// Cursor following: how long a menu/panel glance holds before the cursor can
+// take over, how long an idle glance holds before a moving cursor interrupts
+// it (seconds), and the follow turn speed.
+const FOLLOW = { menuHold: 0.9, panelHold: 2.2, interrupt: 0.5, speed: 0.95 }
+
 function pickGaze(prev: Gaze, home: Gaze): Gaze {
   // Usually glance somewhere new; sometimes settle back toward home.
   if (Math.random() < 0.35) {
@@ -167,6 +172,8 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       nextChange: 1.5,
       seen: attention.version,
       following: false,
+      focusUntil: 0,
+      glanceAt: 0,
       euler: new Euler(0, 0, 0, 'YXZ'),
       m4: new Matrix4(),
       ray: new Raycaster(),
@@ -216,27 +223,28 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
       if (focus) {
         state.target = focus
         state.home = { yaw: focus.yaw * 0.5, pitch: focus.pitch * 0.5, roll: 0 }
-        state.nextChange = t + (attention.kind === 'panel' ? 5.5 : 3.2)
+        state.focusUntil = t + (attention.kind === 'panel' ? FOLLOW.panelHold : FOLLOW.menuHold)
+        state.nextChange = state.focusUntil
         state.following = false
       }
-    } else if (!still && t > state.nextChange) {
-      // Between focus glances, calmly follow a moving cursor; otherwise idle.
-      const p = currentPointer(performance.now())
+    } else if (!still) {
+      // A moving cursor takes over shortly after a focus glance ends, or after
+      // an idle glance has held for a beat; otherwise keep idling.
+      const p = t > state.focusUntil ? currentPointer(performance.now()) : null
       const follow = p && gazeToward(p.x, p.y)
-      if (follow) {
+      if (follow && (state.following || t > state.nextChange || t - state.glanceAt > FOLLOW.interrupt)) {
         // Follow at a little less than the full angle: attentive, not fixated.
         state.target = { yaw: follow.yaw * 0.8, pitch: follow.pitch * 0.7, roll: follow.roll * 0.6 }
         state.following = true
-        speed = 0.7
-      } else {
-        if (state.following) {
-          // The cursor went still: hold that look briefly before idling again.
-          state.following = false
-          state.nextChange = t + MathUtils.randFloat(1.2, 2.2)
-        } else {
-          state.target = pickGaze(state.target, state.home)
-          state.nextChange = t + MathUtils.randFloat(2.4, 5.5)
-        }
+        speed = FOLLOW.speed
+      } else if (!follow && state.following) {
+        // The cursor went still: hold that look briefly before idling again.
+        state.following = false
+        state.nextChange = t + MathUtils.randFloat(1.2, 2.2)
+      } else if (!state.following && t > state.nextChange) {
+        state.target = pickGaze(state.target, state.home)
+        state.glanceAt = t
+        state.nextChange = t + MathUtils.randFloat(2.4, 5.5)
       }
     }
 
