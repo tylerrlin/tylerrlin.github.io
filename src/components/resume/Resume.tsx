@@ -96,12 +96,13 @@ export function ResumeText() {
       role="region"
       aria-label="Resume"
       inert={!active}
+      data-mode={active ? 'resume' : undefined}
       className="resume-layer pointer-events-none fixed inset-0 overflow-hidden text-navy"
     >
       {resume.map((section) => (
         <section key={section.id} aria-labelledby={`resume-${section.id}`}>
           <h2 ref={block()} id={`resume-${section.id}`} className="rw-block rw-section">
-            {section.title}
+            <span>{section.title}</span>
           </h2>
           {section.entries.map((entry) => (
             <article key={entry.org}>
@@ -118,7 +119,7 @@ export function ResumeText() {
                 {entry.bullets.map((b) => (
                   <li key={b} ref={block()} className="rw-block rw-line">
                     <Facet className="rw-mark" />
-                    {b}
+                    <span>{b}</span>
                   </li>
                 ))}
               </ul>
@@ -129,10 +130,12 @@ export function ResumeText() {
               {section.lines.map((l) => (
                 <li key={l.label} ref={block()} className="rw-block rw-line">
                   <Facet className="rw-mark" />
-                  <span className="mb-1 block font-mono text-[11px] tracking-[0.16em] text-ember uppercase">
-                    {l.label}:
-                  </span>{' '}
-                  {l.text}
+                  <div>
+                    <span className="mb-1 block font-mono text-[11px] tracking-[0.16em] text-ember uppercase">
+                      {l.label}:
+                    </span>{' '}
+                    {l.text}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -144,6 +147,19 @@ export function ResumeText() {
 }
 
 const WHEEL_SETTLE_MS = 160
+
+/** Keep Tab cycling through the walk's controls; the home page is inert behind them. */
+function trapTab(e: KeyboardEvent) {
+  const items = dom.hud ? [...dom.hud.querySelectorAll<HTMLElement>('button')] : []
+  if (!items.length) return
+  const first = items[0]
+  const last = items[items.length - 1]
+  const at = document.activeElement
+  if (e.shiftKey ? at === first || !dom.hud?.contains(at) : at === last) {
+    e.preventDefault()
+    ;(e.shiftKey ? last : first).focus()
+  }
+}
 
 export function ResumeHud() {
   const active = useResumeMode()
@@ -171,8 +187,11 @@ export function ResumeHud() {
 
     let wheelFrom = -1
     let wheelTimer = 0
+    // Until the scene is running, the resume is a plain scrolling column.
+    const live = () => dom.textLayer?.hasAttribute('data-live') ?? false
+
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) return // pinch zoom
+      if (e.ctrlKey || !live()) return // pinch zoom, or the plain column
       e.preventDefault()
       if (wheelFrom < 0) wheelFrom = targetStop()
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? bird().vh : 1
@@ -188,7 +207,7 @@ export function ResumeHud() {
 
     let touch: { y: number; from: number; t: number; vy: number } | null = null
     const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return (touch = null)
+      if (e.touches.length !== 1 || !live()) return (touch = null)
       touch = { y: e.touches[0].clientY, from: targetStop(), t: e.timeStamp, vy: 0 }
     }
     const onTouchMove = (e: TouchEvent) => {
@@ -213,6 +232,12 @@ export function ResumeHud() {
 
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey) return
+      if (e.key === 'Tab') return trapTab(e)
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        return exitResume()
+      }
+      if (!live()) return
       const onButton = (e.target as HTMLElement)?.closest?.('button, a')
       let handled = true
       switch (e.key) {
@@ -239,9 +264,6 @@ export function ResumeHud() {
           break
         case 'End':
           goToStop(stations.length - 1)
-          break
-        case 'Escape':
-          exitResume()
           break
         default:
           handled = false
@@ -271,13 +293,14 @@ export function ResumeHud() {
 
   return (
     <div
+      ref={(el) => void (dom.hud = el)}
       inert={!active}
       data-active={active || undefined}
-      className="resume-hud pointer-events-none fixed inset-0 opacity-0 transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
+      className="resume-hud pointer-events-none fixed inset-0 z-10 opacity-0 transition-opacity duration-500 data-active:opacity-100 data-active:delay-700"
     >
       {/* Top: a soft snow fade so text slides under the controls. */}
       <div aria-hidden className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-ice from-40% via-ice/85 to-transparent" />
-      <div aria-hidden className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-ice/90 to-transparent" />
+      <div aria-hidden className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-ice from-25% via-ice/80 to-transparent" />
 
       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 px-4 pt-4 wide-walk:px-8 wide-walk:pt-7">
         <button
@@ -308,7 +331,8 @@ export function ResumeHud() {
                   type="button"
                   data-section={i}
                   onClick={() => {
-                    goToSection(i)
+                    if (dom.textLayer?.hasAttribute('data-live')) goToSection(i)
+                    else document.getElementById(`resume-${s.id}`)?.scrollIntoView({ block: 'start' })
                     setHinted(true)
                   }}
                   className="rw-nav px-1.5 py-2 font-mono text-[10px] tracking-[0.14em] uppercase min-[25rem]:text-[11px] wide-walk:px-2.5"
@@ -326,10 +350,12 @@ export function ResumeHud() {
 
       <p
         data-hidden={hinted || undefined}
-        className="absolute inset-x-0 bottom-6 text-center font-mono text-[11px] tracking-[0.16em] text-navy-soft uppercase transition-opacity duration-500 data-hidden:opacity-0"
+        className="absolute inset-x-0 bottom-5 flex justify-center transition-opacity duration-500 data-hidden:opacity-0"
       >
+        <span className="rounded-full bg-snow/95 px-3.5 py-1.5 font-mono text-[11px] tracking-[0.16em] text-navy-soft uppercase shadow-[0_0_14px_6px_var(--color-snow)]">
         <span className="coarse:hidden">Scroll or use ↑ ↓ to walk · Esc for home</span>
         <span className="hidden coarse:inline">Swipe up to walk</span>
+        </span>
       </p>
     </div>
   )

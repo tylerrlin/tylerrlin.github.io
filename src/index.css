@@ -154,6 +154,20 @@ body {
   margin: 0;
   will-change: transform, opacity;
 }
+/* Emphasis (--o, written by the scene) dims the content, not the block, so
+   the snow plate behind narrow-screen text keeps its strength. */
+.rw-block > * {
+  opacity: var(--o, 1);
+}
+/* Narrow screens hang the text right over the trail: lay it on a soft plate
+   of snow so the path and footprints never run through the words. */
+@media (width < 45rem) {
+  .resume-layer[data-live] .rw-block {
+    border-radius: 18px;
+    background: color-mix(in oklab, var(--color-ice) 82%, transparent);
+    box-shadow: 0 0 18px 14px color-mix(in oklab, var(--color-ice) 82%, transparent);
+  }
+}
 .rw-section {
   width: max-content;
   font-family: var(--font-display);
@@ -197,6 +211,34 @@ body {
     font-size: 16px;
   }
 }
+/* Until the scene takes over (still loading, or no WebGL), the resume is a
+   plain, scrollable reading column on the snow. */
+.resume-layer[data-mode="resume"]:not([data-live]) {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 1; /* over the poster, under the controls */
+  padding: 7.5rem 1.5rem 5rem;
+  background: var(--color-ice);
+}
+.resume-layer[data-mode="resume"]:not([data-live]) .rw-block {
+  position: relative;
+  width: auto;
+  max-width: 36rem;
+  margin: 0 auto 1.1rem;
+  text-align: left;
+}
+.resume-layer[data-mode="resume"]:not([data-live]) .rw-section {
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+  scroll-margin-top: 7rem;
+}
+.resume-layer[data-mode="resume"]:not([data-live]) .rw-entry {
+  margin-top: 1.75rem;
+}
+
 .rw-nav {
   color: color-mix(in oklab, var(--color-navy-soft) 80%, transparent);
   transition: color 0.3s var(--ease-out-soft);

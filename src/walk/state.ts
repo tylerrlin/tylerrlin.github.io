@@ -55,6 +55,8 @@ export const dom = {
   blocks: stations.map(() => null as HTMLElement | null),
   progress: null as HTMLElement | null,
   nav: null as HTMLElement | null,
+  hud: null as HTMLElement | null, // Home, section nav, hint
+  veil: null as HTMLElement | null, // reduced motion: cross-fades through snow
 }
 
 export function currentBird() {

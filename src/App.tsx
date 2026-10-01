@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useSyncExternalStore } from 'react'
+import { Component, Suspense, lazy, useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import Backdrop from './components/Backdrop'
 import Snow from './components/Snow'
 import Links from './components/Links'
@@ -8,6 +8,17 @@ import { dom, getMode, installHistory, subscribeMode } from './walk/state'
 
 // The 3D scene is split into its own chunk so type and layout paint first.
 const Scene = lazy(() => import('./components/scene/Scene'))
+
+/** Without WebGL the page stands on its own: the poster, and the resume as a plain column. */
+class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
 
 // One poster, one coordinate system (index.css). On wide screens the name
 // stands on the horizon with the penguin beside it, inside one screen. When
@@ -36,9 +47,11 @@ export default function App() {
         className="pointer-events-none absolute inset-x-0 top-(--stage-top) h-(--stage) wide:inset-0 wide:h-auto"
       />
       <ResumeText />
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
+      <SceneBoundary>
+        <Suspense fallback={null}>
+          <Scene />
+        </Suspense>
+      </SceneBoundary>
 
       <div
         ref={(el) => void (dom.home[0] = el)}
@@ -65,6 +78,8 @@ export default function App() {
         </div>
       </div>
 
+      {/* Reduced motion: the scene cross-fades through snow instead of flying. */}
+      <div ref={(el) => void (dom.veil = el)} aria-hidden className="pointer-events-none fixed inset-0 bg-ice opacity-0" />
       <ResumeHud />
     </main>
   )

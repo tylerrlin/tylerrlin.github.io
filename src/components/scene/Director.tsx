@@ -45,6 +45,8 @@ const SPEED = { walk: 2.3, run: 9 }
 /** Body travel per step grows a little with speed; feet stay planted either way. */
 const STRIDE = { base: 0.26, perSpeed: 0.045, max: 0.42 }
 const MAX_PRINTS = 64
+/** Seconds to fade to snow and back around a reduced-motion jump, and to land from the plain column. */
+const VEIL = { out: 0.12, in: 0.22, land: 0.45 }
 
 /**
  * A camera framing: it looks at `target` (relative to the penguin's feet)
@@ -126,9 +128,18 @@ export default function Director() {
       blockY: stations.map(() => NaN),
       blockO: stations.map(() => NaN),
       blockVis: stations.map(() => true),
+      live: false,
+      // Reduced motion: 0 idle, 1 fading out, 2 fading back in.
+      veilPhase: 0,
+      veil: 0,
+      veilMode: false, // this fade carries a home <-> resume switch
+      veilO: NaN,
       skyShift: NaN,
       homeO: NaN,
-      textO: NaN,
+      textO: 0,
+      layerO: NaN,
+      layerVis: '',
+      hudO: NaN,
       section: -1,
       progress: NaN,
       groundKey: '',
@@ -154,11 +165,55 @@ export default function Director() {
     const W = s.canvasRect.width
     const H = s.canvasRect.height
 
+    // The scene is up: the text layer and the HUD are ours from here on (until
+    // now the resume reads as a plain column, see index.css).
+    if (!s.live && dom.textLayer && dom.hud) {
+      s.live = true
+      dom.textLayer.setAttribute('data-live', '')
+      dom.hud.style.transition = 'none'
+      if (resume) {
+        // Arrived on /#resume and read the plain column while the scene
+        // loaded: land straight in the walk, rising out of the snow.
+        s.raw = 1
+        s.veil = 1
+        s.veilPhase = 2
+      }
+    }
+
     // --- Flight between home and the walk ---------------------------------
     const goal = resume ? 1 : 0
     if (resume && !s.wasResume) s.printCount = 0 // a fresh trail each visit
     s.wasResume = resume
-    s.raw = reduce ? goal : MathUtils.clamp(s.raw + Math.sign(goal - s.raw) * (dt / FLIGHT), 0, 1)
+    if (!resume) walk.target = walk.pos
+    if (reduce) {
+      // No flights and no walking: fade to snow, jump, fade back.
+      if (s.veilPhase === 0 && (s.raw !== goal || walk.pos !== walk.target)) {
+        s.veilPhase = 1
+        s.veilMode = s.raw !== goal
+      }
+      if (s.veilPhase === 1) {
+        s.veil = Math.min(1, s.veil + dt / VEIL.out)
+        if (s.veil === 1) {
+          s.raw = goal
+          walk.pos = walk.target
+          s.veilPhase = 2
+        }
+      } else if (s.veilPhase === 2) {
+        s.veil = Math.max(0, s.veil - dt / VEIL.in)
+        if (s.veil === 0) s.veilPhase = 0
+      }
+      s.vel = 0
+    } else {
+      if (s.veilPhase === 1) s.veilPhase = 2
+      s.veil = Math.max(0, s.veil - dt / VEIL.land)
+      if (s.veil === 0) s.veilPhase = 0
+      s.raw = MathUtils.clamp(s.raw + Math.sign(goal - s.raw) * (dt / FLIGHT), 0, 1)
+    }
+    const veilO = Math.round(s.veil * 1000) / 1000
+    if (veilO !== s.veilO && dom.veil) {
+      s.veilO = veilO
+      dom.veil.style.opacity = String(veilO)
+    }
     // Dev only: window.__flight = 0..1 holds the flight at that point.
     const hold = import.meta.env.DEV ? (window as { __flight?: number }).__flight : undefined
     if (hold !== undefined) s.raw = hold
@@ -169,15 +224,11 @@ export default function Director() {
     walker.resume = blend
 
     // --- Walk ----------------------------------------------------------------
-    // Leaving, the penguin stops where it is (the spring becomes a pure damper)
-    // and the home framing gathers around it there.
-    if (!resume) walk.target = walk.pos
+    // Leaving, the penguin stops where it is (the spring becomes a pure damper,
+    // walk.target = walk.pos above) and the home framing gathers around it.
     const prevX = walker.x
     const prevZ = walker.z
-    if (reduce) {
-      walk.pos = walk.target
-      s.vel = 0
-    } else {
+    if (!reduce) {
       const gap = walk.target - walk.pos
       s.vel += (OMEGA * OMEGA * gap - 2 * OMEGA * s.vel) * dt
       const vmax = MathUtils.clamp(Math.abs(gap) * 1.5, SPEED.walk, SPEED.run)
@@ -284,19 +335,32 @@ export default function Director() {
       return true
     }
 
-    const textO = Math.round(smooth(0.62, 1, blend) * 1000) / 1000
+    // In late on the way in; out early on the way home, before the penguin
+    // grows back over the text.
+    s.textO = resume || reduce
+      ? smooth(0.62, 1, blend)
+      : Math.min(s.textO, MathUtils.damp(s.textO, smooth(0.82, 1, blend), 12, dt))
+    const textO = Math.round(s.textO * 1000) / 1000
     for (let i = 0; i < stations.length; i++) {
       const [a, b] = bird.wide ? stickyRange(i, stops) : [stops[i], stops[i]]
       const off = pos < a ? a - pos : pos > b ? pos - b : 0
       s.emphasis[i] = 1 - smooth(0.12, 1.5, off)
     }
 
-    if (textO !== s.textO) {
-      s.textO = textO
-      if (dom.textLayer) {
-        dom.textLayer.style.opacity = String(textO)
-        dom.textLayer.style.visibility = textO === 0 ? 'hidden' : 'visible'
-      }
+    // The layer stays visible (in the accessibility tree) throughout resume
+    // mode, even while transparent; at home it is hidden outright.
+    const layerVis = textO === 0 && !resume ? 'hidden' : 'visible'
+    if (dom.textLayer && (textO !== s.layerO || layerVis !== s.layerVis)) {
+      s.layerO = textO
+      s.layerVis = layerVis
+      dom.textLayer.style.opacity = String(textO)
+      dom.textLayer.style.visibility = layerVis
+    }
+    // The controls (and the snow fades under them) come and go with the text.
+    const hudO = Math.round(textO * (s.veilMode ? 1 - s.veil : 1) * 1000) / 1000
+    if (hudO !== s.hudO && dom.hud) {
+      s.hudO = hudO
+      dom.hud.style.opacity = String(hudO)
     }
 
     if (textO > 0) {
@@ -307,8 +371,10 @@ export default function Director() {
         const { w, h } = walk.sizes[i]
         const [a, b] = bird.wide ? stickyRange(i, stops) : [stops[i], stops[i]]
         const za = MathUtils.clamp(pos, a, b)
+        // Culled blocks go transparent, never visibility: hidden, so screen
+        // readers keep the whole resume.
         if (!project(pathX(za, bird.sway), 0, za, anchor)) {
-          if (s.blockVis[i]) el.style.visibility = 'hidden'
+          if (s.blockVis[i]) el.style.opacity = '0'
           s.blockVis[i] = false
           continue
         }
@@ -330,7 +396,7 @@ export default function Director() {
         const visible = near && y < bird.vh + 40 && y + h > -40
         if (visible !== s.blockVis[i]) {
           s.blockVis[i] = visible
-          el.style.visibility = visible ? '' : 'hidden'
+          el.style.opacity = visible ? '' : '0'
         }
         if (!visible) continue
         if (x !== s.blockX[i] || y !== s.blockY[i]) {
@@ -341,7 +407,7 @@ export default function Director() {
         const o = Math.round((0.34 + 0.66 * s.emphasis[i]) * 100) / 100
         if (o !== s.blockO[i]) {
           s.blockO[i] = o
-          el.style.opacity = String(o)
+          el.style.setProperty('--o', String(o))
           el.toggleAttribute('data-current', o > 0.9)
         }
       }
@@ -353,7 +419,7 @@ export default function Director() {
       s.section = section
       dom.nav.querySelectorAll<HTMLElement>('[data-section]').forEach((b) => {
         const on = Number(b.dataset.section) === section
-        if (on) b.setAttribute('aria-current', 'step')
+        if (on) b.setAttribute('aria-current', 'location')
         else b.removeAttribute('aria-current')
       })
     }
