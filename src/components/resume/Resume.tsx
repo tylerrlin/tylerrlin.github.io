@@ -137,7 +137,7 @@ export function ResumeText() {
                 {entry.bullets?.map((b) => (
                   <li key={b} ref={block()} className="rw-block rw-line">
                     <Facet className="rw-mark" />
-                    <span>{b}</span>
+                    <Bullet text={b} />
                   </li>
                 ))}
               </ul>
@@ -146,6 +146,17 @@ export function ResumeText() {
         </section>
       ))}
     </div>
+  )
+}
+
+/** A bullet; a short leading label ("GPA:", "Relevant Courses:") is set bold. */
+function Bullet({ text }: { text: string }) {
+  const m = /^([^:]{1,24}):\s(.*)$/s.exec(text)
+  if (!m) return <span>{text}</span>
+  return (
+    <span>
+      <strong className="font-semibold text-navy">{m[1]}:</strong> {m[2]}
+    </span>
   )
 }
 
