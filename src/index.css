@@ -29,8 +29,9 @@
 
 @media (max-width: 767px) {
   :root {
-    --horizon: 36%;
-    --sun-x: 76%;
+    /* Just above the penguin's feet (scene column is 42svh; feet at 88%). */
+    --horizon: 32%;
+    --sun-x: 74%;
   }
 }
 

@@ -15,8 +15,8 @@ function Rig() {
 
   useEffect(() => {
     const mobile = size.width < 560
-    const heightShare = mobile ? 0.66 : 0.53 // penguin height / canvas height
-    const feetAt = mobile ? 0.9 : 0.835 // feet position from the top, 0..1
+    const heightShare = mobile ? 0.74 : 0.53 // penguin height / canvas height
+    const feetAt = mobile ? 0.88 : 0.835 // feet position from the top, 0..1
     const aspect = size.width / size.height
     // Keep ~1.9 model units of width in view (the penguin plus its beak mid
     // head-turn and its shadow), so tall, narrow columns — portrait tablets —
@@ -24,8 +24,9 @@ function Rig() {
     const viewH = Math.max(PENGUIN_HEIGHT / heightShare, 1.9 / aspect)
     const dist = viewH / (2 * Math.tan((FOV * Math.PI) / 360))
     const targetY = (feetAt - 0.5) * viewH
-    // On desktop, nudge the penguin toward the menu so the two read as one group.
-    const shiftX = mobile ? 0 : 0.12 * viewH * aspect
+    // On desktop, sit the penguin just left of its column's center: room to
+    // breathe from the menu, without drifting to the window edge.
+    const shiftX = mobile ? 0 : 0.03 * viewH * aspect
     camera.position.set(shiftX, targetY + dist * 0.07, dist)
     camera.lookAt(shiftX, targetY, 0)
     camera.updateProjectionMatrix()
@@ -65,6 +66,10 @@ export default function Scene() {
         frameloop={visible ? 'always' : 'never'}
         camera={{ fov: FOV, near: 0.1, far: 50 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        // The wrapper ignores the pointer so it never blocks the page; the
+        // canvas itself takes clicks (the penguin is clickable) but still lets
+        // touch scroll pass through.
+        style={{ pointerEvents: 'auto', touchAction: 'manipulation' }}
         aria-hidden
       >
         <Rig />

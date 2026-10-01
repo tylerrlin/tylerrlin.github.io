@@ -131,26 +131,26 @@ export default function App() {
 
       <div className="relative grid min-h-dvh grid-cols-1 md:grid-cols-2">
         {/* Scene column: on top on phones, pinned to the right half on desktop. */}
-        <div className="relative h-[46svh] md:sticky md:top-0 md:order-last md:h-dvh">
+        <div className="relative h-[42svh] md:sticky md:top-0 md:order-last md:h-dvh">
           <Suspense fallback={null}>
             <Scene />
           </Suspense>
         </div>
 
-        <main className="relative flex flex-col px-6 pt-4 pb-14 sm:px-10 md:min-h-dvh md:justify-center md:pt-16 md:pb-28 md:pr-6 md:pl-[max(4rem,9vw)]">
+        <main className="relative flex flex-col px-6 pt-1 pb-12 sm:px-10 md:min-h-dvh md:justify-center md:pt-12 md:pb-36 md:pr-6 md:pl-[max(4rem,9vw)]">
           {onTitle ? (
             <div className="rise-in">
               <p className="flex items-center gap-3 font-mono text-[11px] tracking-[0.24em] text-slate uppercase">
                 <span aria-hidden className="h-px w-6 bg-navy/30" />
                 {profile.role}
               </p>
-              <h1 className="mt-4 font-display text-[4.75rem] leading-[0.9] tracking-[-0.015em] md:text-[clamp(5.5rem,8.4vw,8.75rem)]">
+              <h1 className="mt-3 font-display text-[3.75rem] leading-[0.92] md:mt-4 md:leading-[0.9] tracking-[-0.015em] md:text-[clamp(5.5rem,8.4vw,8.75rem)]">
                 {profile.name}
               </h1>
-              <p className="mt-6 max-w-[40ch] text-[17px] leading-[1.65] text-pretty text-navy-soft md:mt-7">
+              <p className="mt-4 max-w-[40ch] text-[16px] leading-[1.6] text-pretty text-navy-soft md:mt-7 md:text-[17px] md:leading-[1.65]">
                 {profile.intro}
               </p>
-              <div className="mt-9 md:mt-12">
+              <div className="mt-8 md:mt-12">
                 <Menu selected={selected} onSelect={select} onOpen={openPanel} itemRefs={itemRefs} />
               </div>
             </div>
@@ -162,41 +162,7 @@ export default function App() {
         </main>
       </div>
 
-      <footer
-        className={[
-          'relative flex items-center justify-between gap-6 px-6 pb-8 font-mono text-[11px] tracking-[0.14em] text-slate uppercase sm:px-10 md:inset-x-0 md:bottom-0 md:px-[max(4rem,9vw)] md:pb-8',
-          // Pinned to the bottom of the title screen, unless the viewport is too
-          // short to fit it under the menu (landscape phones): then it flows.
-          onTitle ? '[@media(min-width:768px)_and_(min-height:620px)]:fixed' : 'md:absolute',
-        ].join(' ')}
-      >
-        <span>© {new Date().getFullYear()} {profile.name}</span>
-        <p className="hidden items-center gap-5 [@media(hover:hover)_and_(min-width:768px)]:flex" aria-hidden>
-          {onTitle ? (
-            <>
-              <span className="flex items-center gap-2">
-                <Key>↑</Key>
-                <Key>↓</Key> Select
-              </span>
-              <span className="flex items-center gap-2">
-                <Key>Enter</Key> Open
-              </span>
-            </>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Key>Esc</Key> Back
-            </span>
-          )}
-        </p>
-      </footer>
     </div>
   )
 }
 
-function Key({ children }: { children: string }) {
-  return (
-    <kbd className="inline-grid h-5 min-w-5 place-items-center rounded border border-navy/20 bg-snow/60 px-1 font-mono text-[10px] tracking-normal text-navy-soft normal-case">
-      {children}
-    </kbd>
-  )
-}

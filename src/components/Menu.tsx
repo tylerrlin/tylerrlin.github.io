@@ -35,7 +35,7 @@ export default function Menu({ selected, onSelect, onOpen, itemRefs }: Props) {
 
   return (
     <nav aria-label="Main">
-      <ul className="relative flex flex-col">
+      <ul className="relative flex flex-col border-t border-navy/10 md:border-0">
         <li
           aria-hidden
           className="absolute top-0 -left-6 hidden size-[7px] bg-orange transition-transform duration-500 ease-out-soft md:block"
@@ -47,7 +47,7 @@ export default function Menu({ selected, onSelect, onOpen, itemRefs }: Props) {
         {SECTIONS.map((s, i) => {
           const active = i === selected
           return (
-            <li key={s.id}>
+            <li key={s.id} className="border-b border-navy/10 md:border-0">
               <a
                 ref={(el) => {
                   itemRefs.current[i] = el
@@ -58,19 +58,22 @@ export default function Menu({ selected, onSelect, onOpen, itemRefs }: Props) {
                 onMouseEnter={() => onSelect(i)}
                 onFocus={() => onSelect(i)}
                 className={[
-                  'group grid grid-cols-[2.25rem_auto] items-baseline gap-x-0 py-2.5 pr-2 transition-colors duration-300 focus-visible:outline-none md:flex md:gap-5 md:py-2.5',
+                  'group grid grid-cols-[2.25rem_1fr_auto] items-baseline py-4 transition-colors duration-300 focus-visible:outline-none md:flex md:gap-5 md:py-2.5 md:pr-2',
                   active ? 'text-navy' : 'text-navy md:text-navy/50 md:hover:text-navy/75',
                 ].join(' ')}
               >
                 <span data-index className="w-6 font-mono text-xs tracking-wider tabular-nums text-slate">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span className="font-display text-[2.5rem] leading-none decoration-orange decoration-2 underline-offset-[10px] group-focus-visible:underline md:text-5xl">
+                <span className="font-display text-[2.125rem] leading-none decoration-orange decoration-2 underline-offset-[8px] group-focus-visible:underline md:text-5xl md:underline-offset-[10px]">
                   {s.label}
                 </span>
-                {/* Phones: always shown under the label, so each item explains itself. */}
-                <span className="col-start-2 mt-1.5 font-mono text-[11px] tracking-[0.18em] text-slate uppercase md:hidden">
+                {/* Phones: one tidy row per item; the hint sits right-aligned so each item explains itself. */}
+                <span className="flex items-center gap-2 font-mono text-[10.5px] tracking-[0.16em] text-slate uppercase md:hidden">
                   {s.hint}
+                  <svg aria-hidden viewBox="0 0 12 12" className="size-2.5 text-navy/45">
+                    <path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                  </svg>
                 </span>
                 {/* Desktop: revealed beside the selected item. */}
                 <span
