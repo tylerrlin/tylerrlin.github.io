@@ -3,33 +3,29 @@
 // a plain mutable object rather than React state — pointer moves re-render nothing.
 //
 // Two sources, in priority order:
-//   1. focus: a menu item or panel title was selected (`lookAt`). The penguin
-//      turns to it and holds for a few seconds.
+//   1. focus: a link was hovered or focused (`lookAt`). The penguin turns to it
+//      and holds briefly.
 //   2. pointer: a fine pointer moving over the page. Followed calmly between
 //      focus glances, and dropped once it goes stale so idle glances resume.
 
-export type AttentionKind = 'menu' | 'panel'
-
 export const attention = {
   version: 0,
-  kind: 'menu' as AttentionKind,
   // Viewport (client) coordinates of the thing to look at.
   x: 0,
   y: 0,
 }
 
-export function lookAt(el: Element | null, kind: AttentionKind) {
+export function lookAt(el: Element | null) {
   if (!el) return
   const r = el.getBoundingClientRect()
   attention.x = r.left + Math.min(r.width, 240) / 2
   attention.y = r.top + r.height / 2
-  attention.kind = kind
   attention.version++
 }
 
 const POINTER_STALE_MS = 2600
 
-export const pointer = {
+const pointer = {
   x: 0,
   y: 0,
   at: -Infinity, // performance.now() of the last move

@@ -25,7 +25,7 @@ function Rig() {
     const dist = viewH / (2 * Math.tan((FOV * Math.PI) / 360))
     const targetY = (feetAt - 0.5) * viewH
     // On desktop, sit the penguin just left of its column's center: room to
-    // breathe from the menu, without drifting to the window edge.
+    // breathe from the text, without drifting to the window edge.
     const shiftX = mobile ? 0 : 0.03 * viewH * aspect
     camera.position.set(shiftX, targetY + dist * 0.07, dist)
     camera.lookAt(shiftX, targetY, 0)

@@ -64,11 +64,6 @@ body {
     outline-offset: 4px;
     border-radius: 2px;
   }
-
-  /* Headings receive focus programmatically when a panel opens; no ring needed. */
-  [tabindex="-1"]:focus {
-    outline: none;
-  }
 }
 
 @keyframes rise-in {
@@ -84,19 +79,6 @@ body {
 
 .rise-in {
   animation: rise-in 0.9s var(--ease-out-soft) both;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.fade-in {
-  animation: fade-in 1.4s ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -10,8 +10,8 @@ Personal portfolio — minimalist game-menu home screen with a low-poly 3D pengu
 
 ## Content
 
-All copy lives in `src/content.ts` (projects, about, focus areas, contact links).
-Entries marked `TODO` are placeholders to replace with real details.
+Name, role, resume path and social links live in `src/content.ts`.
+The resume itself is `public/resume.pdf`.
 
 ## Development
 

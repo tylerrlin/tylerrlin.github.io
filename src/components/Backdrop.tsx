@@ -14,7 +14,7 @@ const FAR: Peak[] = [
   { x: 1560, h: 90, w: 200 },
 ]
 
-// Near ridges stay low on the left so the menu reads on open sky.
+// Near ridges stay low on the left so the text reads on open sky.
 const NEAR: Peak[] = [
   { x: 120, h: 22, w: 240 },
   { x: 520, h: 30, w: 260, lean: 30 },

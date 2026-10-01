@@ -22,7 +22,7 @@ const MODEL_URL = '/penguin.glb'
 const SCALE = 1
 const MODEL_HEIGHT = 1.334 // model units, feet at y = 0
 export const PENGUIN_HEIGHT = MODEL_HEIGHT * SCALE
-const FACING = -0.42 // body yaw: a three-quarter turn toward the menu
+const FACING = -0.42 // body yaw: a three-quarter turn toward the text
 
 // Model-space landmarks (the model is Y-up, beak toward +Z).
 const NECK_PIVOT = new Vector3(0, 0.95, 0.01)
@@ -50,7 +50,7 @@ const FLIPPER = {
 }
 
 // Gaze limits, in radians. Positive pitch looks down.
-// The body already faces left (toward the menu), so turns to the right are
+// The body already faces left (toward the text), so turns to the right are
 // capped tighter: at most the beak swings round to about face the viewer.
 const YAW = { left: -0.45, right: 0.15 } // positive yaw turns the head to screen-right
 const PITCH = { up: -0.1, down: 0.16 }
@@ -60,10 +60,10 @@ const FOCUS_PITCH = { up: -0.14, down: 0.3 }
 
 type Gaze = { yaw: number; pitch: number; roll: number }
 
-// Cursor following: how long a menu/panel glance holds before the cursor can
-// take over, how long an idle glance holds before a moving cursor interrupts
+// Cursor following: how long a glance at a hovered link holds before the cursor
+// can take over, how long an idle glance holds before a moving cursor interrupts
 // it (seconds), and the follow turn speed.
-const FOLLOW = { menuHold: 0.9, panelHold: 2.2, interrupt: 0.5, speed: 0.95 }
+const FOLLOW = { linkHold: 0.9, interrupt: 0.5, speed: 0.95 }
 
 function pickGaze(prev: Gaze, home: Gaze): Gaze {
   // Usually glance somewhere new; sometimes settle back toward home.
@@ -219,13 +219,13 @@ export default function Penguin({ onReady }: { onReady?: () => void }) {
 
     let speed = 1
     if (attention.version !== state.seen) {
-      // A menu item or panel was selected: look at it and hold a moment.
+      // A link was hovered or focused: look at it and hold a moment.
       state.seen = attention.version
       const focus = gazeToward(attention.x, attention.y)
       if (focus) {
         state.target = focus
         state.home = { yaw: focus.yaw * 0.5, pitch: focus.pitch * 0.5, roll: 0 }
-        state.focusUntil = t + (attention.kind === 'panel' ? FOLLOW.panelHold : FOLLOW.menuHold)
+        state.focusUntil = t + FOLLOW.linkHold
         state.nextChange = state.focusUntil
         state.following = false
       }
