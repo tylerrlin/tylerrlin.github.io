@@ -29,6 +29,51 @@ function setMode(next: Mode) {
   listeners.forEach((cb) => cb())
 }
 
+// --- How the resume reads ----------------------------------------------------
+// 'walk' lays it along the path; 'list' is the plain reading column the resume
+// shows while the scene loads (index.css), kept on by choice. The scene swaps
+// the layouts under a cross-fade (Director); the choice is remembered.
+
+export type View = 'walk' | 'list'
+
+const VIEW_KEY = 'resume-view'
+
+let view: View = (() => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'walk'
+  } catch {
+    return 'walk'
+  }
+})()
+const viewListeners = new Set<() => void>()
+
+export function getView() {
+  return view
+}
+export function subscribeView(cb: () => void) {
+  viewListeners.add(cb)
+  return () => viewListeners.delete(cb)
+}
+export function setView(next: View) {
+  if (next === view) return
+  view = next
+  try {
+    localStorage.setItem(VIEW_KEY, next)
+  } catch {
+    // Private mode or blocked storage: the choice lasts for this visit.
+  }
+  walk.drive = 0
+  walk.target = walk.pos // the penguin stops where it stands
+  viewListeners.forEach((cb) => cb())
+}
+
+/** True while the text layer shows the plain column (still loading, or the list view). */
+export function inColumn() {
+  const el = dom.textLayer
+  if (!el) return false
+  return el.hasAttribute('data-live') ? el.hasAttribute('data-list') : el.dataset.mode === 'resume'
+}
+
 export const walk = {
   /** Where the penguin is headed, world z along the path. */
   target: 0,
@@ -45,6 +90,8 @@ export const walk = {
   moved: false,
   /** Held-key cruising: -1 / 1 while an arrow is held, else 0 (see applyDrive). */
   drive: 0 as -1 | 0 | 1,
+  /** Re-measure the text and re-lay the stops (set by the DOM layer). */
+  relayout: () => {},
 }
 
 /** Elements the scene writes to every frame. Registered by ref callbacks. */
