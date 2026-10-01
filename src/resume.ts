@@ -32,6 +32,7 @@ export const resume = withIds([
                 bullets: [
                     "Bachelor of Science, Major in Computer Science, Minor in Cognitive and Brain Science",
                     "GPA: 3.84 / 4.00",
+                    "Relevant Courses: Parallel & High Performance Computing, Algorithms, Data Structures, Database Systems, Multivariable Calculus, Linear Algebra, Machine Structure & Assembly",
                 ],
             },
         ],
