@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* The poster layout (name on the horizon, penguin beside it) needs a window
+   at least as wide as it is nearly tall; otherwise the page stacks. Keep in
+   step with STAND in Scene.tsx. */
+@custom-variant wide (@media (width >= 48rem) and (min-aspect-ratio: 4/5));
+
 @theme {
   /* Palette drawn from the penguin: navy back, ice belly, orange ear patch. */
   --color-navy: #1f2536;
@@ -22,16 +27,16 @@
 
 :root {
   color-scheme: light;
-  /* Horizon height as a share of the first viewport; shared by sky, ridges, ground. */
-  --horizon: 77%;
-  --sun-x: 63%;
+  /* Horizon height as a share of the hero; shared by sky, ridges, ground, the
+     type and the penguin's footing (STAND in Scene.tsx). Stacked layout first. */
+  --horizon: 64%;
+  --sun-x: 70%;
 }
 
-@media (max-width: 767px) {
+@media (width >= 48rem) and (min-aspect-ratio: 4/5) {
   :root {
-    /* Just above the penguin's feet (scene column is 42svh; feet at 88%). */
-    --horizon: 32%;
-    --sun-x: 74%;
+    --horizon: 63%;
+    --sun-x: 53%;
   }
 }
 
@@ -89,4 +94,30 @@ body {
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Faceted link glyphs (Links.tsx): three navy planes, an orange accent, ice cutouts.
+   On hover the glyph rises a touch and its lit planes catch the low sun. */
+.facets svg {
+  transition: translate 0.35s var(--ease-out-soft);
+}
+.facets polygon {
+  transition: fill 0.35s var(--ease-out-soft);
+}
+.facets .fd { fill: var(--color-navy); }
+.facets .fm { fill: #2c344b; }
+.facets .fl { fill: #434c67; }
+.facets .fs { fill: var(--color-orange); }
+.facets .fsd { fill: #d27a14; }
+.facets .fi { fill: var(--color-snow); }
+.facets:focus-visible {
+  outline-offset: 0;
+}
+.facets:hover svg,
+.facets:focus-visible svg {
+  translate: 0 -2px;
+}
+.facets:hover .fl,
+.facets:focus-visible .fl {
+  fill: #5d6886;
 }

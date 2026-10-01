@@ -45,7 +45,7 @@ export default function Backdrop() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-svh overflow-hidden md:fixed md:h-lvh"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
     >
       {/* Sky: cool at the zenith, warming toward the horizon. */}
       <div

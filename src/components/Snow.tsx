@@ -17,6 +17,7 @@ export default function Snow() {
     let flakes: Flake[] = []
     let w = 0
     let h = 0
+    let ground = 0 // y where flakes have settled into the snowfield
     let raf = 0
     let last = performance.now()
 
@@ -40,6 +41,8 @@ export default function Snow() {
       canvas.width = Math.round(w * dpr)
       canvas.height = Math.round(h * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const horizon = parseFloat(getComputedStyle(canvas).getPropertyValue('--horizon')) || 70
+      ground = h * (horizon / 100 + 0.06)
       const count = Math.min(90, Math.round((w * h) / 16000))
       flakes = Array.from({ length: count }, () => spawn())
     }
@@ -49,7 +52,7 @@ export default function Snow() {
       ctx.fillStyle = '#ffffff'
       for (const f of flakes) {
         // Fade flakes out as they reach the bright snowfield.
-        const fade = Math.min(1, Math.max(0, (h * 0.82 - f.y) / (h * 0.3)))
+        const fade = Math.min(1, Math.max(0, (ground - f.y) / (h * 0.25)))
         ctx.globalAlpha = f.a * fade
         ctx.beginPath()
         ctx.arc(f.x + Math.sin(t / 1000 + f.phase) * f.sway, f.y, f.r, 0, Math.PI * 2)
@@ -98,7 +101,7 @@ export default function Snow() {
     <canvas
       ref={ref}
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-svh w-full md:fixed md:h-lvh md:[mask-image:linear-gradient(90deg,rgba(0,0,0,0.12)_0%,rgba(0,0,0,0.12)_36%,#000_52%)]"
+      className="pointer-events-none absolute inset-0 size-full"
     />
   )
 }

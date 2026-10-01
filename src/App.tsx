@@ -1,64 +1,37 @@
 import { Suspense, lazy } from 'react'
 import Backdrop from './components/Backdrop'
 import Snow from './components/Snow'
-import Socials from './components/Socials'
+import Links from './components/Links'
 import { profile } from './content'
-import { lookAt } from './attention'
 
 // The 3D scene is split into its own chunk so type and layout paint first.
 const Scene = lazy(() => import('./components/scene/Scene'))
 
+// One poster, one coordinate system: the sky, the penguin and the type are all
+// placed against --horizon (index.css). On desktop the name stands on the
+// horizon line with the penguin beside it; on phones it reads top to bottom.
 export default function App() {
   return (
-    <div className="relative min-h-dvh overflow-x-clip">
+    <main className="relative h-svh min-h-[34rem] overflow-hidden">
       <Backdrop />
       <Snow />
+      <Suspense fallback={null}>
+        <Scene />
+      </Suspense>
 
-      <div className="relative grid min-h-dvh grid-cols-1 grid-rows-[42svh_1fr] md:grid-cols-2 md:grid-rows-1">
-        {/* Scene column: on top on phones, the right half on desktop. */}
-        <div className="relative md:order-last md:h-dvh">
-          <Suspense fallback={null}>
-            <Scene />
-          </Suspense>
-        </div>
-
-        <main className="relative flex flex-col justify-center px-9 pt-2 pb-[10svh] sm:px-12 md:min-h-dvh md:pt-12 md:pb-36 md:pr-6 md:pl-[max(4rem,9vw)]">
-          <div className="rise-in text-center md:text-left">
-            <p className="flex items-center justify-center gap-3 font-mono text-[11px] tracking-[0.24em] text-slate uppercase md:justify-start">
-              <span aria-hidden className="h-px w-6 bg-navy/30" />
-              {profile.role}
-              <span aria-hidden className="h-px w-6 bg-navy/30 md:hidden" />
-            </p>
-            <h1 className="mt-3 font-display text-[3.75rem] leading-[0.92] tracking-[-0.015em] md:mt-4 md:text-[clamp(5.5rem,8.4vw,8.75rem)] md:leading-[0.9]">
-              {profile.name}
-            </h1>
-
-            <div className="mt-5 md:mt-7">
-              <Socials />
-            </div>
-
-            <a
-              href={profile.resume}
-              target="_blank"
-              rel="noopener noreferrer"
-              onMouseEnter={(e) => lookAt(e.currentTarget)}
-              onFocus={(e) => lookAt(e.currentTarget)}
-              className="group mt-9 inline-flex items-baseline gap-4 md:mt-12"
-            >
-              <span
-                aria-hidden
-                className="size-[7px] -translate-y-[0.55em] rotate-45 bg-orange transition-transform duration-300 group-hover:scale-125"
-              />
-              <span className="font-display text-[2.5rem] leading-none decoration-orange decoration-2 underline-offset-[10px] group-hover:underline group-focus-visible:underline md:text-5xl">
-                Resume
-              </span>
-              <span className="font-mono text-[11px] tracking-[0.18em] text-ember-deep uppercase">
-                PDF ↗
-              </span>
-            </a>
-          </div>
-        </main>
+      <div className="rise-in absolute inset-x-0 top-[10%] px-6 text-center wide:top-auto wide:bottom-[calc(100%-var(--horizon))] wide:px-[max(2.5rem,7vw)] wide:text-left">
+        <p className="font-mono text-[11px] wide:text-xs tracking-[0.26em] text-navy-soft uppercase wide:mb-5">{profile.role}</p>
+        <h1 className="mt-2 font-display text-[min(27vw,14svh)] leading-[0.95] tracking-[-0.02em] wide:mt-0 wide:translate-y-[0.065em] wide:text-[clamp(5rem,min(15vw,24svh),15rem)] wide:leading-[0.8]">
+          {profile.name}
+        </h1>
       </div>
-    </div>
+
+      <div className="rise-in absolute inset-x-0 top-[calc(var(--horizon)+12.5%)] px-6 text-center [animation-delay:120ms] wide:top-[calc(var(--horizon)+4.5rem)] wide:px-[max(2.5rem,7vw)] wide:text-left">
+        <p className="font-display text-[1.6rem] leading-tight text-navy-soft italic wide:text-[clamp(1.75rem,3.4svh,2.5rem)]">{profile.tagline}</p>
+        <div className="mt-6 wide:mt-8">
+          <Links />
+        </div>
+      </div>
+    </main>
   )
 }

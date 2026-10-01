@@ -1,36 +1,39 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { CanvasTexture, SRGBColorSpace } from 'three'
+import { CanvasTexture, SRGBColorSpace, type PerspectiveCamera } from 'three'
 import Penguin, { PENGUIN_HEIGHT } from './Penguin'
 import { installPointerTracking } from '../../attention'
 
 const FOV = 28
 
-// Frame the camera from the container's shape instead of fixed numbers, so the
-// penguin keeps the same presence (and its feet stay on the painted snowfield)
-// at any viewport size.
+// Where the penguin stands, in shares of the hero (which the canvas fills):
+// `x` its center, `feet` its feet from the top (keep them just below
+// --horizon in index.css), `height` its height. `maxW` caps the height as a
+// share of the width, so narrow or squat windows shrink it instead of crowding
+// the type.
+const STAND = {
+  wide: { x: 0.69, feet: 0.855, height: 0.62, maxW: 0.36 },
+  narrow: { x: 0.52, feet: 0.7, height: 0.38, maxW: 0.8 },
+}
+
 function Rig() {
-  const camera = useThree((s) => s.camera)
+  const camera = useThree((s) => s.camera) as PerspectiveCamera
   const size = useThree((s) => s.size)
 
   useEffect(() => {
-    const mobile = size.width < 560
-    const heightShare = mobile ? 0.74 : 0.53 // penguin height / canvas height
-    const feetAt = mobile ? 0.88 : 0.835 // feet position from the top, 0..1
-    const aspect = size.width / size.height
-    // Keep ~1.9 model units of width in view (the penguin plus its beak mid
-    // head-turn and its shadow), so tall, narrow columns — portrait tablets —
-    // shrink the penguin instead of cropping it.
-    const viewH = Math.max(PENGUIN_HEIGHT / heightShare, 1.9 / aspect)
+    const { width: w, height: h } = size
+    const stand = w >= 768 && w / h >= 0.8 ? STAND.wide : STAND.narrow // the `wide` variant in index.css
+    const px = Math.min(stand.height * h, stand.maxW * w)
+    const viewH = (PENGUIN_HEIGHT * h) / px // world units spanned by the canvas height
     const dist = viewH / (2 * Math.tan((FOV * Math.PI) / 360))
-    const targetY = (feetAt - 0.5) * viewH
-    // On desktop, sit the penguin just left of its column's center: room to
-    // breathe from the text, without drifting to the window edge.
-    const shiftX = mobile ? 0 : 0.03 * viewH * aspect
-    camera.position.set(shiftX, targetY + dist * 0.07, dist)
-    camera.lookAt(shiftX, targetY, 0)
+    const targetY = (stand.feet - 0.5) * viewH
+    camera.position.set(0, targetY + dist * 0.07, dist)
+    camera.lookAt(0, targetY, 0)
+    // Shift the lens rather than the camera, so the penguin keeps the same
+    // straight-on view wherever it stands in the frame.
+    camera.setViewOffset(w, h, -(stand.x - 0.5) * w, 0, w, h)
     camera.updateProjectionMatrix()
-  }, [camera, size.width, size.height])
+  }, [camera, size])
 
   return null
 }
@@ -62,7 +65,7 @@ export default function Scene() {
     >
       <Canvas
         flat
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
         frameloop={visible ? 'always' : 'never'}
         camera={{ fov: FOV, near: 0.1, far: 50 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
