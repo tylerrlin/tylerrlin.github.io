@@ -97,10 +97,22 @@ export function goToSection(section: number) {
   goToStop(stations.findIndex((s) => s.kind === 'section' && s.section === section))
 }
 
-/** Free movement (wheel, drag), in world units. */
+/** How many stops the target may run ahead of the penguin during free movement. */
+const MAX_LEAD = 2
+
+/** Free movement (wheel, drag), in world units. Never far ahead of the penguin. */
 export function nudge(dz: number) {
-  walk.target = clampZ(walk.target + dz)
+  const here = nearestStop(walk.pos, walk.stops)
+  const lo = walk.stops[Math.max(0, here - MAX_LEAD)]
+  const hi = walk.stops[Math.min(walk.stops.length - 1, here + MAX_LEAD)]
+  walk.target = Math.min(hi, Math.max(lo, clampZ(walk.target + dz)))
   walk.moved = true
+}
+
+/** A held arrow key: take the next step only once the penguin has reached this one. */
+export function stepHeld(dir: 1 | -1) {
+  if (nearestStop(walk.pos, walk.stops) !== targetStop()) return
+  step(dir)
 }
 
 /**

@@ -13,6 +13,7 @@ import {
   setStops,
   settle,
   step,
+  stepHeld,
   subscribeMode,
   targetStop,
   walk,
@@ -125,21 +126,6 @@ export function ResumeText() {
               </ul>
             </article>
           ))}
-          {section.lines && (
-            <ul>
-              {section.lines.map((l) => (
-                <li key={l.label} ref={block()} className="rw-block rw-line">
-                  <Facet className="rw-mark" />
-                  <div>
-                    <span className="mb-1 block font-mono text-[11px] tracking-[0.16em] text-ember uppercase">
-                      {l.label}:
-                    </span>{' '}
-                    {l.text}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
       ))}
     </div>
@@ -243,11 +229,13 @@ export function ResumeHud() {
       switch (e.key) {
         case 'ArrowDown':
         case 'ArrowRight':
-          step(1)
+          if (e.repeat) stepHeld(1)
+          else step(1)
           break
         case 'ArrowUp':
         case 'ArrowLeft':
-          step(-1)
+          if (e.repeat) stepHeld(-1)
+          else step(-1)
           break
         case 'PageDown':
           leap(1)

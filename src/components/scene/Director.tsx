@@ -41,7 +41,7 @@ const STAND = {
 const FLIGHT = 1.6
 /** Walk spring stiffness (critically damped) and speed limits, world units/s. */
 const OMEGA = 5.2
-const SPEED = { walk: 2.3, run: 9 }
+const SPEED = { walk: 1.9, run: 3.2 }
 /** Body travel per step grows a little with speed; feet stay planted either way. */
 const STRIDE = { base: 0.26, perSpeed: 0.045, max: 0.42 }
 const MAX_PRINTS = 64

@@ -9,14 +9,27 @@ export type ResumeEntry = {
 }
 
 export type ResumeSection = {
-  id: 'experience' | 'education' | 'skills'
+  id: 'education' | 'experience'
   title: string
   entries: ResumeEntry[]
-  /** Plain lines with a leading label, e.g. "Languages: …" (Skills). */
-  lines?: { label: string; text: string }[]
 }
 
 export const resume: ResumeSection[] = [
+  {
+    id: 'education',
+    title: 'Education',
+    entries: [
+      {
+        org: 'Tufts University — School of Engineering',
+        dates: 'Sep 2022 – Present',
+        bullets: [
+          'Bachelor of Science, Major in Computer Science, Minor in Cognitive and Brain Science',
+          "GPA: 3.92 / 4.00, Dean's List",
+          'Relevant courses: Algorithms (A-), Data Structures (A), Database Systems (A), Calculus III (A), Linear Algebra (A-), Machine Structure & Assembly (IP), Parallel & High Performance Computing (IP)',
+        ],
+      },
+    ],
+  },
   {
     id: 'experience',
     title: 'Experience',
@@ -64,30 +77,6 @@ export const resume: ResumeSection[] = [
       },
     ],
   },
-  {
-    id: 'education',
-    title: 'Education',
-    entries: [
-      {
-        org: 'Tufts University — School of Engineering',
-        dates: 'Sep 2022 – Present',
-        bullets: [
-          'Bachelor of Science, Major in Computer Science, Minor in Cognitive and Brain Science',
-          "GPA: 3.92 / 4.00, Dean's List",
-          'Relevant courses: Algorithms (A-), Data Structures (A), Database Systems (A), Calculus III (A), Linear Algebra (A-), Machine Structure & Assembly (IP), Parallel & High Performance Computing (IP)',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'skills',
-    title: 'Skills',
-    entries: [],
-    lines: [
-      { label: 'Languages', text: 'Python, C++, C, Rust, JavaScript, TypeScript, SQL, Java, HTML, CSS' },
-      { label: 'Technologies', text: 'GCP (Cloud Digital Leader), AWS, Git, PostgreSQL, MongoDB, React JS, Tailwind, Prisma, Zod' },
-    ],
-  },
 ]
 
 /** One stop on the path: a heading, an entry's header, or a single line. */
@@ -109,7 +98,6 @@ export const stations: Station[] = (() => {
       for (let b = 0; b < e.bullets.length; b++) out.push({ kind: 'line', section: si, entry })
       entry++
     }
-    for (let l = 0; l < (s.lines?.length ?? 0); l++) out.push({ kind: 'line', section: si, entry: -1 })
   })
   return out
 })()

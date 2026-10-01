@@ -122,7 +122,7 @@ export function layoutStops(heights: number[], bird: Bird): number[] {
 
 /**
  * The z range over which a block stays pinned beside the penguin (wide only):
- * an entry's header holds while its bullets go by; Skills holds over its lines.
+ * an entry's header holds while its bullets go by.
  */
 export function stickyRange(i: number, stops: number[]): [number, number] {
   return [stops[i], stops[stickyEnd(i)]]
@@ -134,8 +134,6 @@ function stickyEnd(i: number) {
   let end = i
   if (s.kind === 'entry') {
     while (end + 1 < stations.length && stations[end + 1].kind === 'line' && stations[end + 1].entry === s.entry) end++
-  } else if (s.kind === 'section' && stations[i + 1]?.kind === 'line') {
-    while (end + 1 < stations.length && stations[end + 1].kind === 'line') end++
   }
   return end
 }
