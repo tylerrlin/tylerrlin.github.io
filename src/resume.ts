@@ -50,6 +50,11 @@ export const resume = withIds([
                 role: "eFX Benchmarks Intern",
                 dates: "Jun 2025 – Aug 2025",
                 location: "Boston, MA",
+                bullets: [
+                    "Developed a gradient boosting regressor to predict fixing window currency pair correlations.",
+                    "Built a real-time dashboard to monitor anonymous market-making activity across ECNs/fixing sessions.",
+                    "Analyzed the effectiveness of a benchmark execution strategy during WMR fixing windows.",
+                ],
             },
         ],
     },
