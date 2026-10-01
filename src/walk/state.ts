@@ -205,17 +205,11 @@ export function setStops(stops: number[]) {
 
 // --- Entering and leaving --------------------------------------------------
 
-function lockScroll(on: boolean) {
-  document.documentElement.style.overflow = on ? 'hidden' : ''
-}
-
 function applyEnter() {
-  lockScroll(true)
   setMode('resume')
 }
 
 function applyExit() {
-  lockScroll(false)
   setMode('home')
 }
 

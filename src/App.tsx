@@ -34,9 +34,12 @@ export default function App() {
   useEffect(installHistory, [])
 
   return (
-    <main className="relative min-h-svh overflow-x-clip wide:h-svh wide:min-h-[23rem]">
+    <main className="relative h-svh overflow-x-clip">
       <ResumeGround />
       <div ref={(el) => void (dom.sky = el)} aria-hidden className="absolute inset-0">
+        {/* The sky carries on above the top edge, behind a phone's status bar
+            and toolbar, so nothing pale shows there. */}
+        <div className="absolute inset-x-0 bottom-full h-[40vh] bg-[#aebdd0]" />
         <Backdrop />
         <Snow />
       </div>

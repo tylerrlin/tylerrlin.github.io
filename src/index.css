@@ -28,8 +28,8 @@
 /* One coordinate system for sky, ridges, snowfield, sun, penguin and type.
 
    Stacked (phones, portrait tablets): everything is a length, built top down
-   from the name and the penguin's stage, so the text below the horizon flows
-   and the page scrolls on short screens instead of clipping. The stage is a
+   from the name and the penguin's stage, sized so the whole stack fits one
+   screen even on short phones (the page never scrolls). The stage is a
    box the penguin fills (STAND.narrow in Director.tsx: feet at 94%, 80% tall); its top
    tucks just under the name so the head sits close beneath it. */
 :root {
@@ -67,14 +67,22 @@
   clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
 }
 
+/* One screen, no page scroll: the home poster fits the viewport and the resume
+   moves within it (its plain column scrolls on its own). No overscroll bounce
+   either, and the color behind everything is the top of the sky. */
 html {
-  background-color: var(--color-ice);
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background-color: #aebdd0;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background-color: var(--color-ice);
   color: var(--color-navy);
   font-family: var(--font-sans);
