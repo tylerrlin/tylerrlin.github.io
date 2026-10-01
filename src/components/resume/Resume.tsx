@@ -312,6 +312,28 @@ export function ResumeHud() {
       nudge(dy / bird().alongPx)
       retire()
     }
+    // Clicking through: a click on a heading or bullet walks there; a click on
+    // the open snow steps along the path toward it (below the penguin goes on,
+    // above goes back). Controls keep their own clicks.
+    const blockAt = (x: number, y: number) =>
+      dom.blocks.findIndex((el) => {
+        if (!el || Number(getComputedStyle(el).opacity) < 0.05) return false
+        const r = el.getBoundingClientRect()
+        return x >= r.left - 8 && x <= r.right + 8 && y >= r.top - 8 && y <= r.bottom + 8
+      })
+    const onClick = (e: MouseEvent) => {
+      if (!live() || e.button !== 0 || (e.target as HTMLElement)?.closest?.('button, a, [role="radiogroup"]')) return
+      if (window.getSelection()?.toString()) return // selecting text, not walking
+      const i = blockAt(e.clientX, e.clientY)
+      if (i >= 0) goToStop(i)
+      else step(e.clientY > window.innerHeight / 2 ? 1 : -1)
+      retire()
+    }
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return
+      document.body.style.cursor = live() && blockAt(e.clientX, e.clientY) >= 0 ? 'pointer' : ''
+    }
+
     const onTouchEnd = () => {
       if (!touch) return
       // A flick carries on a little before settling.
@@ -385,6 +407,8 @@ export function ResumeHud() {
     }
 
     window.addEventListener('keydown', onKey)
+    window.addEventListener('click', onClick)
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('blur', release)
     return () => {
@@ -393,6 +417,9 @@ export function ResumeHud() {
       window.removeEventListener('blur', release)
       clearTimeout(wheelTimer)
       window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('click', onClick)
+      window.removeEventListener('pointermove', onPointerMove)
+      document.body.style.cursor = ''
       window.removeEventListener('touchstart', onTouchStart)
       window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('touchend', onTouchEnd)
@@ -472,8 +499,8 @@ export function ResumeHud() {
         className="absolute inset-x-0 bottom-5 flex justify-center transition-opacity duration-500 data-hidden:opacity-0"
       >
         <span className="rounded-full bg-snow/95 px-3.5 py-1.5 font-mono text-[11px] tracking-[0.16em] text-navy-soft uppercase shadow-[0_0_14px_6px_var(--color-snow)]">
-        <span className="coarse:hidden">Scroll or use ↑ ↓ to walk · Esc for home</span>
-        <span className="hidden coarse:inline">Swipe up to walk</span>
+        <span className="coarse:hidden">Click, scroll or use ↑ ↓ to walk · Esc for home</span>
+        <span className="hidden coarse:inline">Swipe or tap to walk</span>
         </span>
       </p>
     </div>
